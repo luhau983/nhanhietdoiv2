@@ -1,0 +1,101 @@
+---
+import { site } from '@/config/site';
+
+const path = Astro.url.pathname;
+
+function isActive(href: string) {
+  return path === href || path.startsWith(`${href}/`);
+}
+---
+
+<!--
+  Hai trạng thái, do Motion.astro gắn/tháo data-over-hero:
+  - trên hero ảnh tối: trong suốt, chữ trắng
+  - còn lại: nền giấy mờ + viền dưới, chữ mực
+
+  Không dùng mix-blend-difference: header buộc phải có z-index để nằm trên nội dung,
+  mà z-index tạo stacking context riêng nên blend bị cô lập — chữ trắng giữ nguyên
+  màu trắng trên nền sáng và mất tương phản hoàn toàn.
+-->
+<header
+  class="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/90 text-ink backdrop-blur-sm transition-colors duration-500 data-[over-hero]:border-transparent data-[over-hero]:bg-transparent data-[over-hero]:backdrop-blur-none data-[over-hero]:text-white"
+  data-site-header
+>
+  <!--
+    Scrim cho trạng thái trên hero: không thể trông chờ ảnh hero luôn tối ở phần
+    trên. Ảnh trời sáng làm chữ trắng mất hút, nên tự bảo đảm tương phản bằng một
+    lớp gradient mỏng thay vì phó mặc cho từng bức ảnh.
+  -->
+  <div
+    class="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 via-black/25 to-transparent opacity-0 transition-opacity duration-500 [[data-over-hero]_&]:opacity-100"
+    aria-hidden="true"
+  >
+  </div>
+  <!-- Menu mobile bằng checkbox: không cần JS, tự reset sau mỗi lần điều hướng. -->
+  <input id="nav-toggle" type="checkbox" class="peer sr-only" aria-label="Mở menu" />
+
+  <div
+    class="invisible fixed inset-0 bg-paper text-ink opacity-0 transition-[opacity,visibility] duration-500 ease-[var(--ease-out-expo)] max-md:peer-checked:visible max-md:peer-checked:opacity-100 md:hidden"
+  >
+    <label
+      for="nav-toggle"
+      class="absolute top-2.5 right-3 flex h-11 cursor-pointer items-center px-2 text-sm tracking-[0.18em] uppercase select-none"
+    >
+      Đóng
+    </label>
+
+    <nav class="flex h-full flex-col justify-center gap-2 px-6" aria-label="Menu chính">
+      {
+        site.nav.map((item) => (
+          <a
+            href={item.href}
+            class="py-3 text-title font-light tracking-tight"
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a href={`mailto:${site.email}`} class="label mt-8">{site.email}</a>
+    </nav>
+  </div>
+
+  <div class="relative flex items-center justify-between px-5 py-2.5 md:px-10 md:py-5">
+    <a
+      href="/"
+      class="text-sm font-medium tracking-[0.2em] uppercase"
+      aria-label={`${site.name} — về trang chủ`}
+    >
+      {site.name}
+    </a>
+
+    <nav class="hidden items-center gap-9 md:flex" aria-label="Menu chính">
+      {
+        site.nav.map((item) => (
+          <a
+            href={item.href}
+            class="link-underline text-sm tracking-wide"
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <!-- h-11 = 44px: ngưỡng tối thiểu cho vùng chạm trên cảm ứng. -->
+    <label
+      for="nav-toggle"
+      class="-mr-2 flex h-11 cursor-pointer items-center px-2 text-sm tracking-[0.18em] uppercase select-none md:hidden"
+    >
+      Menu
+    </label>
+  </div>
+</header>
+
+<style>
+  /* Khoá scroll khi menu mở. :has() tránh phải viết JS toggle class lên body. */
+  :global(body:has(#nav-toggle:checked)) {
+    overflow: hidden;
+  }
+</style>

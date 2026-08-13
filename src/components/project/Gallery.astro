@@ -1,0 +1,57 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  gallery: CollectionEntry<'projects'>['data']['gallery'];
+  title: string;
+}
+
+const { gallery, title } = Astro.props;
+---
+
+{
+  gallery.length > 0 && (
+    <div class="space-y-16 md:space-y-28">
+      {gallery.map((item, i) =>
+        item.wide ? (
+          // Ảnh tràn viền: dùng cho toàn cảnh, mặt đứng. Tạo nhịp nghỉ giữa các
+          // đoạn nội dung hẹp.
+          <figure data-reveal>
+            <div class="relative overflow-hidden bg-paper-deep">
+              <Image
+                src={item.src}
+                alt={item.caption ?? `${title} — ảnh ${i + 1}`}
+                widths={[768, 1280, 1800, 2400]}
+                sizes="100vw"
+                loading="lazy"
+                data-img-fade
+                class="w-full"
+              />
+            </div>
+            {item.caption && (
+              <figcaption class="label mt-3 px-5 md:px-10">{item.caption}</figcaption>
+            )}
+          </figure>
+        ) : (
+          <figure class="px-5 md:px-10" data-reveal>
+            <div class="mx-auto max-w-4xl">
+              <div class="relative overflow-hidden bg-paper-deep">
+                <Image
+                  src={item.src}
+                  alt={item.caption ?? `${title} — ảnh ${i + 1}`}
+                  widths={[640, 960, 1400]}
+                  sizes="(min-width: 1024px) 56rem, 92vw"
+                  loading="lazy"
+                  data-img-fade
+                  class="w-full"
+                />
+              </div>
+              {item.caption && <figcaption class="label mt-3">{item.caption}</figcaption>}
+            </div>
+          </figure>
+        ),
+      )}
+    </div>
+  )
+}

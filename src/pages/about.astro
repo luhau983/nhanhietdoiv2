@@ -1,0 +1,112 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CtaLink from '@/components/ui/CtaLink.astro';
+import Press from '@/components/layout/Press.astro';
+import studioImage from '@/assets/studio.jpg';
+import { site } from '@/config/site';
+import { PROJECT_TYPES, SERVICES } from '@/config/taxonomy';
+
+// Quy trình: tên giai đoạn và thứ tự là đủ. Chi tiết để dành cho buổi gặp.
+const process = [
+  { step: '01', title: 'Khảo sát hiện trạng' },
+  { step: '02', title: 'Phương án ý tưởng' },
+  { step: '03', title: 'Hồ sơ kỹ thuật' },
+  { step: '04', title: 'Giám sát thi công' },
+];
+
+// Tên lấy từ phần ghi công trong hai bài VnExpress về công trình của studio —
+// không phải suy đoán. Vai trò cụ thể thì cần studio xác nhận.
+const team = [
+  { name: 'Đỗ Đình Mạnh', role: 'Kiến trúc sư' },
+  { name: 'Nguyễn Thái Hoàng', role: 'Kiến trúc sư' },
+];
+---
+
+<BaseLayout
+  title="Về studio"
+  description={`${site.legalName} — văn phòng kiến trúc tại ${site.city}. Thiết kế nhà ở, thương mại và cải tạo.`}
+>
+  <section class="px-5 pt-32 pb-14 md:px-10 md:pt-44 md:pb-20">
+    <h1 class="max-w-[24ch] text-display leading-[0.94] font-light tracking-[-0.02em]">
+      Ánh sáng, thông gió, vật liệu địa phương
+    </h1>
+    <p class="mt-6 text-lead text-ink-soft">
+      {site.city} — từ năm {site.foundedYear}
+    </p>
+  </section>
+
+  <figure class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]">
+    <div class="absolute inset-x-0 -top-[8%] h-[116%]">
+      <Image
+        src={studioImage}
+        alt={`Văn phòng làm việc của ${site.name}`}
+        widths={[768, 1280, 1800, 2400]}
+        sizes="100vw"
+        loading="eager"
+        data-parallax="10"
+        class="h-full w-full object-cover"
+      />
+    </div>
+  </figure>
+
+  <section class="grid gap-px bg-line md:grid-cols-3">
+    <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
+      <p class="label">Dịch vụ</p>
+      <ul class="mt-6 space-y-3">
+        {
+          SERVICES.map((s) => (
+            <li class="text-lead font-light">{s.label}</li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
+      <p class="label">Hạng mục</p>
+      <ul class="mt-6 space-y-3">
+        {
+          PROJECT_TYPES.map((t) => (
+            <li>
+              <a href={`/projects?type=${t.slug}`} class="link-underline text-lead font-light">
+                {t.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
+      <p class="label">Quy trình</p>
+      <ol class="mt-6 space-y-3">
+        {
+          process.map((item) => (
+            <li class="flex gap-5">
+              <span class="label pt-1.5">{item.step}</span>
+              <span class="text-lead font-light">{item.title}</span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <Press label="Truyền thông" />
+
+  <section class="px-5 py-16 md:px-10 md:py-24">
+    <p class="label">Nhóm</p>
+    <ul class="mt-6 grid gap-8 sm:grid-cols-3">
+      {
+        team.map((member) => (
+          <li>
+            <p class="text-lead font-normal tracking-tight">{member.name}</p>
+            <p class="label mt-1.5">{member.role}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <CtaLink href="/contact" variant="dark-outline" class="mt-14">Liên hệ studio</CtaLink>
+  </section>
+</BaseLayout>

@@ -1,0 +1,99 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { typeLabel } from '@/config/taxonomy';
+
+interface Props {
+  projects: CollectionEntry<'projects'>[];
+  /** Số ô tải eager — chỉ nên bằng số ô thực sự nằm trong màn hình đầu. */
+  eagerCount?: number;
+  /** Ô chữ chốt cuối lưới, dùng ở trang chủ để dẫn sang danh mục đầy đủ. */
+  moreHref?: string;
+  moreLabel?: string;
+}
+
+const { projects, eagerCount = 4, moreHref, moreLabel } = Astro.props;
+---
+
+<!--
+  Lưới dày tràn viền: toàn bộ công trình hiện ra cùng lúc, người xem nắm được
+  khối lượng và thể loại việc studio làm mà không phải đọc một dòng nào.
+
+  Cải tiến so với các trang cùng thể loại: lưới của họ hoàn toàn không nhãn nên
+  không phân biệt được nhà ở với resort hay cao tầng. Ở đây tên và hạng mục hiện
+  khi hover, và hiện thường trực trên mobile vì cảm ứng không có hover.
+-->
+<ul
+  class="grid grid-cols-2 gap-px bg-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+  data-work-wall
+>
+  {
+    projects.map((project, i) => (
+      <li data-project-type={project.data.type}>
+        <a
+          href={`/projects/${project.id}`}
+          class="group relative block aspect-square overflow-hidden bg-paper-deep"
+        >
+          <Image
+            src={project.data.cover}
+            alt={`${project.data.title} — ${typeLabel(project.data.type)} tại ${project.data.location}`}
+            widths={[320, 480, 700, 960]}
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+            loading={i < eagerCount ? 'eager' : 'lazy'}
+            fetchpriority={i === 0 ? 'high' : 'auto'}
+            data-img-fade={i < eagerCount ? undefined : true}
+            class="h-full w-full object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.06]"
+          />
+
+          <div
+            class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/10 to-transparent p-4 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100 max-md:opacity-100 md:p-5"
+          >
+            <!--
+              line-clamp-2: ô trên mobile chỉ rộng ~187px, tên dự án thật dài như
+              "Nhà nghỉ dưỡng 500 m² đưa mảng xanh vào từng không gian nhỏ" sẽ đẩy
+              nhãn hạng mục tràn khỏi ô nếu để xuống dòng tự do.
+            -->
+            <p class="line-clamp-2 text-sm leading-tight text-white md:text-base">
+              {project.data.title}
+            </p>
+            <p class="mt-1.5 text-[0.625rem] tracking-[0.16em] text-white/75 uppercase">
+              {typeLabel(project.data.type)} — {project.data.year}
+            </p>
+
+            {/* Nhãn link hiện khi hover: nói rõ ô ảnh dẫn đi đâu, không để người
+                xem phải đoán xem có bấm được không. */}
+            <span
+              class="mt-3 hidden text-[0.625rem] tracking-[0.16em] text-white uppercase md:block md:opacity-0 md:transition-opacity md:duration-500 md:group-hover:opacity-100"
+            >
+              Xem dự án
+              <span class="ml-1.5 inline-block" aria-hidden="true">
+                →
+              </span>
+            </span>
+          </div>
+        </a>
+      </li>
+    ))
+  }
+
+  {
+    moreHref && (
+      <li>
+        <a
+          href={moreHref}
+          class="group flex aspect-square items-end bg-ink p-4 text-paper md:p-5"
+        >
+          <span class="text-[0.9375rem] leading-tight">
+            {moreLabel}
+            <span
+              class="ml-2 inline-block transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-1.5"
+              aria-hidden="true"
+            >
+              →
+            </span>
+          </span>
+        </a>
+      </li>
+    )
+  }
+</ul>

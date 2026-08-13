@@ -1,0 +1,41 @@
+---
+import { site } from '@/config/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-line px-5 pt-14 pb-8 md:px-10 md:pt-20">
+  <div class="grid gap-10 md:grid-cols-12">
+    <div class="md:col-span-5">
+      <a href="/contact" class="link-underline text-title leading-none font-light tracking-tight">
+        Liên hệ
+      </a>
+    </div>
+
+    <div class="md:col-span-3 md:col-start-7">
+      <ul class="space-y-1.5 text-sm text-ink-soft">
+        <li><a href={`mailto:${site.email}`} class="link-underline">{site.email}</a></li>
+        <li><a href={`tel:${site.phoneHref}`} class="link-underline">{site.phone}</a></li>
+      </ul>
+      {site.address && <p class="mt-5 max-w-[26ch] text-sm text-muted">{site.address}</p>}
+    </div>
+
+    <div class="md:col-span-3">
+      <ul class="space-y-1.5 text-sm text-ink-soft">
+        {
+          site.socials.map((s) => (
+            <li>
+              <a href={s.href} class="link-underline" target="_blank" rel="noopener noreferrer">
+                {s.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <p class="mt-14 border-t border-line pt-6 text-xs text-muted">
+    © {year} {site.legalName}
+  </p>
+</footer>

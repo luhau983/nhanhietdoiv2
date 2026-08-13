@@ -1,0 +1,49 @@
+---
+import { press } from '@/config/press';
+
+interface Props {
+  /** Nhãn phần — đổi được để trang about và trang chủ không lặp y nguyên chữ. */
+  label?: string;
+}
+
+const { label = 'Báo chí' } = Astro.props;
+---
+
+<!--
+  Bằng chứng bên thứ ba: với studio kiến trúc, một dòng "VnExpress" đáng tin hơn
+  cả đoạn văn tự giới thiệu. Giữ đúng ba thông tin — báo nào, bài gì, ngày nào.
+-->
+{
+  press.length > 0 && (
+    <section class="border-t border-line px-5 py-16 md:px-10 md:py-20">
+      <p class="label">{label}</p>
+
+      <ul class="mt-6">
+        {press.map((item, i) => (
+          <li data-reveal style={`--reveal-delay: ${i * 80}ms`}>
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group grid gap-1.5 border-b border-line py-5 sm:grid-cols-[7rem_1fr_auto] sm:items-baseline sm:gap-8"
+            >
+              <span class="label">{item.outlet}</span>
+
+              <span class="text-lead font-light">
+                {item.title}
+                <span
+                  class="ml-2 inline-block text-muted transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                >
+                  ↗
+                </span>
+              </span>
+
+              <span class="label shrink-0">{item.dateLabel}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

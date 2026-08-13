@@ -1,0 +1,16 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại.">
+  <section class="flex min-h-[70svh] flex-col justify-center px-5 py-32 md:px-10">
+    <p class="label">404</p>
+    <h1 class="mt-6 max-w-[24ch] text-display leading-[0.94] font-light tracking-[-0.02em]">
+      Không tìm thấy trang này
+    </h1>
+    <div class="mt-10 flex flex-wrap gap-x-8 gap-y-3">
+      <a href="/" class="link-underline text-sm">Về trang chủ</a>
+      <a href="/projects" class="link-underline text-sm">Xem dự án</a>
+    </div>
+  </section>
+</BaseLayout>

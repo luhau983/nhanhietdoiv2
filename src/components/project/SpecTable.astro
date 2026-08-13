@@ -1,0 +1,35 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { statusLabel, typeLabel } from '@/config/taxonomy';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const d = project.data;
+
+// Bảng thông số là thứ phân biệt hồ sơ kiến trúc thật với album ảnh nội thất.
+// Chỉ hiện dòng có dữ liệu, không để "—" trống trải khắp bảng.
+const rows: Array<{ label: string; value: string }> = [
+  { label: 'Hạng mục', value: typeLabel(d.type) },
+  { label: 'Địa điểm', value: d.location },
+  { label: 'Năm', value: String(d.year) },
+  { label: 'Trạng thái', value: statusLabel(d.status) },
+  ...(d.area ? [{ label: 'Diện tích', value: d.area }] : []),
+  ...(d.client ? [{ label: 'Chủ đầu tư', value: d.client }] : []),
+  ...(d.team.length ? [{ label: 'Nhóm thiết kế', value: d.team.join(', ') }] : []),
+  ...(d.photographer ? [{ label: 'Ảnh', value: d.photographer }] : []),
+];
+---
+
+<dl class="grid grid-cols-1 gap-x-10 gap-y-0 sm:grid-cols-2">
+  {
+    rows.map((row) => (
+      <div class="flex items-baseline justify-between gap-6 border-b border-line py-3.5">
+        <dt class="label shrink-0">{row.label}</dt>
+        <dd class="text-right text-sm text-ink-soft">{row.value}</dd>
+      </div>
+    ))
+  }
+</dl>

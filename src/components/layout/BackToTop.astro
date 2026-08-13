@@ -1,0 +1,107 @@
+---
+// Nút về đầu trang. Đặt bên trái nút liên hệ thay vì xếp dọc: panel liên hệ bung
+// lên trên, xếp dọc sẽ bị panel che mất.
+---
+
+<!--
+  Mốc đo cao 80vh neo ở đầu tài liệu. Còn thấy mốc này nghĩa là vẫn ở gần đầu
+  trang → ẩn nút. Đo bằng IntersectionObserver thay vì scroll event vì Lenis
+  không phát scroll event trên window, nên listener scroll sẽ không bao giờ chạy.
+-->
+<div class="back-to-top-sentinel" aria-hidden="true"></div>
+
+<button
+  type="button"
+  class="back-to-top fixed right-20 bottom-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-ink bg-paper text-ink md:right-[5.5rem] md:bottom-6"
+  aria-label="Về đầu trang"
+>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="h-5 w-5"
+    aria-hidden="true"
+  >
+    <path d="M12 19V5"></path>
+    <path d="M5 12l7-7 7 7"></path>
+  </svg>
+</button>
+
+<style>
+  .back-to-top-sentinel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 80vh;
+    pointer-events: none;
+  }
+
+  /* Ẩn hẳn khi ở đầu trang: nút "lên đầu" lúc đang ở đầu trang là nhiễu. */
+  .back-to-top {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition:
+      opacity 0.4s var(--ease-out-expo),
+      transform 0.4s var(--ease-out-expo),
+      visibility 0.4s,
+      background-color 0.3s,
+      color 0.3s;
+  }
+
+  .back-to-top[data-visible] {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (hover: hover) {
+    .back-to-top:hover {
+      background-color: var(--color-ink);
+      color: var(--color-paper);
+    }
+  }
+</style>
+
+<script>
+  /*
+    Uỷ quyền ở cấp module, không gắn listener lên từng phần tử: script của component
+    nằm cuối <body> nên chạy SAU khi ClientRouter (ở <head>) đã bắn astro:page-load.
+    Chỉ đăng ký trong listener page-load thì lần tải đầu không khởi tạo được.
+  */
+  let observer: IntersectionObserver | null = null;
+
+  function observeSentinel() {
+    observer?.disconnect();
+
+    const sentinel = document.querySelector('.back-to-top-sentinel');
+    const button = document.querySelector<HTMLButtonElement>('.back-to-top');
+    if (!sentinel || !button) return;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        button.toggleAttribute('data-visible', !entry?.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('.back-to-top')) return;
+
+    // Lenis điều khiển scroll nên phải nhờ nó cuộn; gọi window.scrollTo trực tiếp
+    // làm vị trí nội bộ của Lenis lệch và cú cuộn sau bị giật về chỗ cũ.
+    if (window.__lenis) window.__lenis.scrollTo(0);
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  document.addEventListener('astro:page-load', observeSentinel);
+  observeSentinel();
+</script>

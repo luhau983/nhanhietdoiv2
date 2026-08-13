@@ -1,0 +1,27 @@
+# build
+dist/
+.astro/
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+.env.local
+
+# hệ điều hành / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# state file của FTP deploy action, không commit
+.ftp-deploy-sync-state.json
+
+# Ảnh thô tải từ website cũ (~145 MB). Không commit: chỉ là khu vực trung chuyển,
+# ảnh nào được gán vào dự án thì chuyển sang src/assets/ và commit ở đó.
+# Cần lại thì chạy: node scripts/fetch-old-site-images.mjs
+assets-source/

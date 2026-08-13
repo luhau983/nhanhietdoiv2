@@ -1,0 +1,97 @@
+---
+import '@/styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import ContactButtons from '@/components/layout/ContactButtons.astro';
+import BackToTop from '@/components/layout/BackToTop.astro';
+import Motion from '@/components/motion/Motion.astro';
+import { site } from '@/config/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** URL ảnh dùng cho Open Graph — nên truyền ảnh cover ở trang dự án. */
+  ogImage?: string;
+  /** Ẩn Footer ở những trang tự lo phần chân trang. */
+  showFooter?: boolean;
+}
+
+const { title, description = site.description, ogImage, showFooter = true } = Astro.props;
+
+const pageTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.positioning}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImageUrl = ogImage ? new URL(ogImage, Astro.site).href : undefined;
+
+// Schema.org: studio kiến trúc sống bằng tìm kiếm địa phương, structured data
+// giúp Google hiểu đây là doanh nghiệp có địa chỉ thật.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ArchitecturalService',
+  name: site.legalName,
+  alternateName: site.name,
+  description: site.description,
+  url: Astro.site?.href,
+  email: site.email,
+  telephone: site.phone,
+  foundingDate: String(site.foundedYear),
+  // Bỏ streetAddress khi chưa có: Google từ chối PostalAddress có trường rỗng,
+  // thà khai báo thiếu còn hơn khai báo sai.
+  address: {
+    '@type': 'PostalAddress',
+    ...(site.address ? { streetAddress: site.address } : {}),
+    addressLocality: site.city,
+    addressCountry: 'VN',
+  },
+  sameAs: site.socials.map((s) => s.href),
+};
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:locale" content="vi_VN" />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
+
+    <ClientRouter />
+    <Motion />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+  </head>
+
+  <body>
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
+    >
+      Bỏ qua tới nội dung
+    </a>
+
+    <Header />
+
+    <main id="main">
+      <slot />
+    </main>
+
+    {showFooter && <Footer />}
+
+    <BackToTop />
+    <ContactButtons />
+  </body>
+</html>

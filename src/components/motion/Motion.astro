@@ -1,0 +1,186 @@
+---
+/**
+ * Nơi duy nhất khởi tạo motion cho toàn site: smooth scroll, reveal, parallax.
+ *
+ * Ba nguyên tắc:
+ * 1. GSAP chỉ tải khi trang thực sự có phần tử [data-parallax] — trang liên hệ
+ *    không cần trả 50KB JS.
+ * 2. prefers-reduced-motion tắt sạch Lenis và GSAP, không chỉ rút ngắn thời lượng.
+ * 3. Mọi thứ re-init theo astro:page-load để hoạt động với View Transitions.
+ */
+---
+
+<script>
+  import Lenis from 'lenis';
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  let lenis: Lenis | null = null;
+  let cleanups: Array<() => void> = [];
+
+  function teardown() {
+    cleanups.forEach((fn) => fn());
+    cleanups = [];
+    lenis?.destroy();
+    lenis = null;
+  }
+
+  function initSmoothScroll() {
+    if (reduced.matches) return;
+
+    lenis = new Lenis({
+      duration: 1.1,
+      // Đường cong giảm dần: nhanh lúc đầu, dừng mềm. Cảm giác "nặng" đúng chất
+      // site kiến trúc, không trôi tuột như ease-linear.
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.6,
+      // Mobile dùng scroll native: Lenis trên touch thường phản tác dụng.
+      smoothWheel: true,
+      syncTouch: false,
+    });
+
+    let frame = requestAnimationFrame(function raf(time) {
+      lenis?.raf(time);
+      frame = requestAnimationFrame(raf);
+    });
+
+    // Công khai instance để nút "về đầu trang" cuộn qua Lenis. Nếu nó tự gọi
+    // window.scrollTo thì vị trí nội bộ của Lenis lệch khỏi vị trí thật.
+    window.__lenis = lenis;
+
+    cleanups.push(() => {
+      cancelAnimationFrame(frame);
+      delete window.__lenis;
+    });
+  }
+
+  function initReveal() {
+    const targets = document.querySelectorAll<HTMLElement>('[data-reveal]');
+    if (!targets.length) return;
+
+    if (reduced.matches) {
+      targets.forEach((el) => el.setAttribute('data-revealed', ''));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.setAttribute('data-revealed', '');
+          observer.unobserve(entry.target);
+        });
+      },
+      // Kích hoạt khi phần tử vào 12% dưới viewport: người dùng thấy chuyển động
+      // đang diễn ra chứ không thấy nó bắt đầu từ số 0.
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.01 },
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    cleanups.push(() => observer.disconnect());
+  }
+
+  function initImageFade() {
+    document.querySelectorAll<HTMLImageElement>('[data-img-fade]').forEach((img) => {
+      if (img.complete) {
+        img.classList.add('is-loaded');
+        return;
+      }
+      const onLoad = () => img.classList.add('is-loaded');
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onLoad, { once: true });
+    });
+  }
+
+  async function initParallax() {
+    const targets = document.querySelectorAll<HTMLElement>('[data-parallax]');
+    if (!targets.length || reduced.matches) return;
+
+    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+      import('gsap'),
+      import('gsap/ScrollTrigger'),
+    ]);
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Lenis không phát scroll event của window, phải đẩy tay sang ScrollTrigger.
+    if (lenis) {
+      const onScroll = () => ScrollTrigger.update();
+      lenis.on('scroll', onScroll);
+      cleanups.push(() => lenis?.off('scroll', onScroll));
+    }
+
+    targets.forEach((el) => {
+      const strength = Number(el.dataset.parallax || '12');
+      gsap.fromTo(
+        el,
+        { yPercent: -strength / 2 },
+        {
+          yPercent: strength / 2,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el.parentElement ?? el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        },
+      );
+    });
+
+    ScrollTrigger.refresh();
+
+    cleanups.push(() => {
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+      gsap.killTweensOf(targets);
+    });
+  }
+
+  /**
+   * Đổi trạng thái header khi hero còn che vùng header hay không.
+   * rootMargin âm ở cạnh trên co vùng quan sát xuống đúng chiều cao header, nên
+   * hero "hết giao" ngay lúc đáy hero đi qua header — không cần đo scroll từng frame.
+   */
+  function initHeaderTheme() {
+    const header = document.querySelector<HTMLElement>('[data-site-header]');
+    if (!header) return;
+
+    const hero = document.querySelector<HTMLElement>('[data-hero]');
+    if (!hero) {
+      header.removeAttribute('data-over-hero');
+      return;
+    }
+
+    const headerHeight = header.offsetHeight;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) header.setAttribute('data-over-hero', '');
+        else header.removeAttribute('data-over-hero');
+      },
+      { rootMargin: `-${headerHeight}px 0px 0px 0px`, threshold: 0 },
+    );
+
+    observer.observe(hero);
+    cleanups.push(() => {
+      observer.disconnect();
+      header.removeAttribute('data-over-hero');
+    });
+  }
+
+  function boot() {
+    teardown();
+    initSmoothScroll();
+    initHeaderTheme();
+    initReveal();
+    initImageFade();
+    void initParallax();
+  }
+
+  // astro:page-load chạy cả lần tải đầu và sau mỗi lần điều hướng View Transitions.
+  document.addEventListener('astro:page-load', boot);
+  document.addEventListener('astro:before-swap', teardown);
+
+  // Đổi cài đặt reduced-motion giữa phiên thì áp dụng ngay, không cần reload.
+  reduced.addEventListener('change', boot);
+</script>

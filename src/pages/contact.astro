@@ -1,0 +1,52 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CtaLink from '@/components/ui/CtaLink.astro';
+import { site } from '@/config/site';
+
+const details = [
+  { label: 'Điện thoại', value: site.phone, href: `tel:${site.phoneHref}` },
+  { label: 'Zalo', value: site.phone, href: 'https://zalo.me/0964990168' },
+  { label: 'Email', value: site.email, href: `mailto:${site.email}` },
+  // Chỉ hiện văn phòng khi đã có địa chỉ thật.
+  ...(site.address ? [{ label: 'Văn phòng', value: site.address }] : []),
+  ...site.socials.map((s) => ({ label: s.label, value: 'Xem trang', href: s.href })),
+];
+---
+
+<BaseLayout
+  title="Liên hệ"
+  description={`Liên hệ ${site.legalName}${site.address ? ` — ${site.address}` : ''}. Email ${site.email}, điện thoại ${site.phone}.`}
+>
+  <section class="px-5 pt-32 pb-24 md:px-10 md:pt-44 md:pb-36">
+    <h1 class="max-w-[20ch] text-display leading-[0.94] font-light tracking-[-0.02em]">
+      Liên hệ
+    </h1>
+
+    <dl class="mt-14 max-w-2xl">
+      {
+        details.map((item) => (
+          <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1 border-b border-line py-5">
+            <dt class="label">{item.label}</dt>
+            <dd class="text-lead text-ink-soft">
+              {item.href ? (
+                <a href={item.href} class="link-underline">
+                  {item.value}
+                </a>
+              ) : (
+                item.value
+              )}
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <CtaLink
+      href={`mailto:${site.email}?subject=${encodeURIComponent('Yêu cầu thiết kế')}`}
+      variant="dark-solid"
+      class="mt-12"
+    >
+      Gửi yêu cầu thiết kế
+    </CtaLink>
+  </section>
+</BaseLayout>
