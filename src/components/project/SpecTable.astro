@@ -23,7 +23,12 @@ const rows: Array<{ label: string; value: string }> = [
 ];
 ---
 
-<dl class="grid grid-cols-1 gap-x-10 gap-y-0 sm:grid-cols-2">
+<!--
+  Một cột ở mọi khổ màn. Trước đây sm trở lên xếp hai cột, mà phần lớn dự án chỉ có
+  4 dòng nên bảng co lại còn hai hàng — cạnh đoạn tóm tắt cao gấp nhiều lần, nửa phải
+  trang bỏ trống thành một mảng chết. Một cột kéo bảng cao lên, cân với cột chữ bên trái.
+-->
+<dl class="border-t border-line">
   {
     rows.map((row) => (
       <div class="flex items-baseline justify-between gap-6 border-b border-line py-3.5">

@@ -7,12 +7,27 @@ interface Props {
   projects: CollectionEntry<'projects'>[];
   /** Số ô tải eager — chỉ nên bằng số ô thực sự nằm trong màn hình đầu. */
   eagerCount?: number;
-  /** Ô chữ chốt cuối lưới, dùng ở trang chủ để dẫn sang danh mục đầy đủ. */
+  /** Ô chữ chốt cuối lưới: vừa là điểm dừng, vừa lấp ô lẻ của hàng cuối. */
   moreHref?: string;
   moreLabel?: string;
 }
 
-const { projects, eagerCount = 4, moreHref, moreLabel } = Astro.props;
+// Mặc định 6 = đúng một hàng đầy ở breakpoint rộng nhất (lg:grid-cols-6). Để 4 như
+// trước thì hai ô cuối của hàng đầu vẫn nằm trong màn hình đầu mà lại tải lazy.
+const { projects, eagerCount = 6, moreHref, moreLabel } = Astro.props;
+
+/*
+  sizes phải bám đúng số cột của lưới, nếu không trình duyệt chọn nhầm bậc srcset:
+  lưới là 2 / sm:3 / md:4 / lg:6 cột, tương ứng 50 / 33.33 / 25 / 16.67vw. Khai báo
+  cũ (25vw ở lg, 33vw ở md) lệch nguyên một bậc nên mỗi ô tải ảnh to gấp rưỡi mức cần.
+
+  Breakpoint viết theo đúng mốc Tailwind: sm=640, md=768, lg=1024.
+*/
+const TILE_SIZES =
+  '(min-width: 1024px) 16.67vw, (min-width: 768px) 25vw, (min-width: 640px) 33.33vw, 50vw';
+
+// Ô vuông cạnh ~240px ở màn 1440 và ~430px ở màn 2560; nhân DPR 2 là ~860px.
+const TILE_WIDTHS = [240, 360, 480, 640, 960];
 ---
 
 <!--
@@ -34,13 +49,26 @@ const { projects, eagerCount = 4, moreHref, moreLabel } = Astro.props;
           href={`/projects/${project.id}`}
           class="group relative block aspect-square overflow-hidden bg-paper-deep"
         >
+          <!--
+            WebP một định dạng, KHÔNG dùng Picture + AVIF ở đây.
+
+            Đã thử và đo: bật AVIF cho lưới này cộng với gallery đẩy số lần encode
+            mỗi lần build lên hơn 1.100, build mất ~25 phút và dist phình lên 189MB —
+            quá đắt cho 11 ô thumbnail crop vuông rộng ~240px, nơi AVIF gần như không
+            hơn WebP về cảm nhận. AVIF chỉ giữ cho ảnh hero (LCP).
+
+            quality 68: ô nhỏ và bị crop, hạ chất lượng ở cỡ này mắt không bắt được
+            nhưng dung lượng giảm rõ.
+          -->
           <Image
             src={project.data.cover}
             alt={`${project.data.title} — ${typeLabel(project.data.type)} tại ${project.data.location}`}
-            widths={[320, 480, 700, 960]}
-            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+            quality={68}
+            widths={TILE_WIDTHS}
+            sizes={TILE_SIZES}
             loading={i < eagerCount ? 'eager' : 'lazy'}
             fetchpriority={i === 0 ? 'high' : 'auto'}
+            decoding={i === 0 ? 'sync' : 'async'}
             data-img-fade={i < eagerCount ? undefined : true}
             class="h-full w-full object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.06]"
           />

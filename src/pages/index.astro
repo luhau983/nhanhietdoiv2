@@ -10,11 +10,23 @@ const all = (await getCollection('projects', ({ data }) => !data.draft)).sort(
   (a, b) => a.data.order - b.data.order || b.data.year - a.data.year,
 );
 
-// Lưới 6 cột: 35 ô dự án + 1 ô dẫn sang danh mục đầy đủ = 6 hàng tròn trịa.
 // Giới hạn để trang chủ không nhân bản y nguyên /projects (trùng nội dung, hại SEO).
 const WALL_LIMIT = 35;
 const wall = all.slice(0, WALL_LIMIT);
 const hasMore = all.length > wall.length;
+
+/*
+  Ô chốt cuối lưới luôn hiện, không phụ thuộc hasMore.
+
+  Lý do: lưới chạy 2 / 3 / 4 / 6 cột nên số ô lẻ để lại một lỗ trống ở hàng cuối tại
+  mọi breakpoint. Ô chốt vừa lấp lỗ đó vừa cho lưới một điểm dừng. Với 11 dự án hiện
+  tại thì 11 + 1 = 12, chia hết cho cả 2, 3, 4 và 6.
+
+  Khi đã cắt bớt thì chốt bằng đường sang danh mục đầy đủ; khi trang chủ vốn đã hiện
+  hết thì link sang /projects là thừa, chuyển thành lối liên hệ.
+*/
+const moreHref = hasMore ? '/projects' : '/contact';
+const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu dự án của bạn';
 ---
 
 <BaseLayout>
@@ -61,12 +73,7 @@ const hasMore = all.length > wall.length;
     Ảnh trả lời câu "studio này làm kiến trúc gì" nhanh hơn mọi đoạn văn.
   -->
   <section id="work" class="scroll-mt-0">
-    <WorkWall
-      projects={wall}
-      eagerCount={4}
-      moreHref={hasMore ? '/projects' : undefined}
-      moreLabel={hasMore ? `Tất cả ${all.length} dự án` : undefined}
-    />
+    <WorkWall projects={wall} moreHref={moreHref} moreLabel={moreLabel} />
   </section>
 
   <Press />

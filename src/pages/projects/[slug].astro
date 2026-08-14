@@ -1,6 +1,6 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
-import { getImage, Image } from 'astro:assets';
+import { getImage, Picture } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import SpecTable from '@/components/project/SpecTable.astro';
 import Gallery from '@/components/project/Gallery.astro';
@@ -49,15 +49,24 @@ const ogImage = await getImage({
   <article>
     <header class="relative h-[86svh] min-h-[30rem] overflow-hidden" data-hero>
       <div class="absolute inset-x-0 -top-[6%] h-[112%]">
-        <Image
+        <!--
+          LCP của trang này. AVIF trước, WebP sau, JPEG chốt hạ — ảnh hero full-bleed
+          là file nặng nhất trang nên chênh lệch định dạng ở đây đáng giá nhất.
+          Thêm bậc 480/640 cho điện thoại: trước đây bậc nhỏ nhất là 768 nên máy màn
+          hẹp vẫn phải tải ảnh rộng hơn nhu cầu.
+        -->
+        <Picture
           src={d.cover}
           alt={`${d.title} — ${typeLabel(d.type)} tại ${d.location}`}
-          widths={[768, 1280, 1800, 2400]}
+          formats={['avif', 'webp']}
+          fallbackFormat="jpeg"
+          widths={[480, 640, 768, 1280, 1800, 2400]}
           sizes="100vw"
           loading="eager"
           fetchpriority="high"
           decoding="sync"
           data-parallax="10"
+          pictureAttributes={{ class: 'block h-full w-full' }}
           class="h-full w-full object-cover"
         />
       </div>
@@ -95,13 +104,22 @@ const ogImage = await getImage({
       </div>
     </section>
 
-    <!-- Nội dung dài viết trong MDX: prose hẹp để dòng chữ không quá 70 ký tự. -->
+    <!--
+      Nội dung dài viết trong MDX: prose hẹp để dòng chữ không quá 70 ký tự.
+
+      Đặt trong cùng lưới 12 cột và cùng cột với đoạn tóm tắt phía trên thay vì
+      mx-auto. Trước đây khối này canh giữa trong khi tiêu đề, tóm tắt canh trái còn
+      bảng thông số canh phải — bốn mốc canh lề khác nhau trên một trang, mắt không
+      có chỗ bám. Giờ cả trang chung một trục trái.
+    -->
     <section class="px-5 md:px-10">
-      <div
-        class="mx-auto max-w-[62ch] space-y-6 text-lead leading-[1.7] text-ink-soft [&_h2]:pt-8 [&_h2]:text-title [&_h2]:font-light [&_h2]:tracking-tight [&_h2]:text-ink [&_strong]:font-medium [&_strong]:text-ink"
-        data-reveal
-      >
-        <Content />
+      <div class="grid md:grid-cols-12">
+        <div
+          class="max-w-[62ch] space-y-6 text-lead leading-[1.7] text-ink-soft md:col-span-6 [&_h2]:pt-8 [&_h2]:text-title [&_h2]:font-light [&_h2]:tracking-tight [&_h2]:text-ink [&_strong]:font-medium [&_strong]:text-ink"
+          data-reveal
+        >
+          <Content />
+        </div>
       </div>
     </section>
 

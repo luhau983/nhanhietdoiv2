@@ -60,8 +60,13 @@ function isExternal(href: string) {
 <style>
   /*
     Trạng thái hiện/ẩn viết bằng selector tự đặt chứ không dùng biến thể Tailwind:
-    Tailwind 4 bọc peer-*/group-* trong :where() nên chúng không cộng specificity —
-    `group-hover:visible` hoà 0,1,0 với `invisible` rồi thua theo thứ tự khai báo.
+    Tailwind 4 bọc các biến thể peer và group trong :where() nên chúng không cộng
+    specificity — `group-hover:visible` hoà 0,1,0 với `invisible` rồi thua theo thứ
+    tự khai báo.
+
+    KHÔNG viết ký tự sao rồi gạch chéo trong comment này: cặp đó đóng comment sớm,
+    phần chữ còn lại thành CSS rác và nuốt luôn rule .contact-panel bên dưới — panel
+    mất trạng thái ẩn nên bung sẵn trên mọi trang.
   */
   .contact-panel {
     visibility: hidden;

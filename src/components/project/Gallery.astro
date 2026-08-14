@@ -1,4 +1,7 @@
 ---
+// WebP một định dạng: 73 ảnh gallery nhân AVIF là phần đốt build nhiều nhất
+// (đo được ~25 phút build, dist 189MB). Ảnh gallery đều lazy dưới màn hình đầu nên
+// AVIF ít giá trị nhất ở đây; chỉ hero giữ AVIF.
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 
@@ -8,6 +11,10 @@ interface Props {
 }
 
 const { gallery, title } = Astro.props;
+
+// Ảnh hẹp bị chặn ở max-w-4xl (56rem = 896px) nên DPR 2 chỉ cần tới ~1800px;
+// ở mobile khối chiếm 92vw.
+const NARROW_SIZES = '(min-width: 1024px) 56rem, 92vw';
 ---
 
 {
@@ -22,9 +29,10 @@ const { gallery, title } = Astro.props;
               <Image
                 src={item.src}
                 alt={item.caption ?? `${title} — ảnh ${i + 1}`}
-                widths={[768, 1280, 1800, 2400]}
+                widths={[480, 768, 1280, 1800, 2400]}
                 sizes="100vw"
                 loading="lazy"
+                decoding="async"
                 data-img-fade
                 class="w-full"
               />
@@ -34,15 +42,18 @@ const { gallery, title } = Astro.props;
             )}
           </figure>
         ) : (
+          // Canh trái theo đúng trục của tiêu đề và phần chữ phía trên, bỏ mx-auto:
+          // ảnh hẹp canh giữa xen giữa các khối canh trái làm trang gãy nhịp.
           <figure class="px-5 md:px-10" data-reveal>
-            <div class="mx-auto max-w-4xl">
+            <div class="max-w-4xl">
               <div class="relative overflow-hidden bg-paper-deep">
                 <Image
                   src={item.src}
                   alt={item.caption ?? `${title} — ảnh ${i + 1}`}
-                  widths={[640, 960, 1400]}
-                  sizes="(min-width: 1024px) 56rem, 92vw"
+                  widths={[480, 640, 960, 1400, 1800]}
+                  sizes={NARROW_SIZES}
                   loading="lazy"
+                  decoding="async"
                   data-img-fade
                   class="w-full"
                 />

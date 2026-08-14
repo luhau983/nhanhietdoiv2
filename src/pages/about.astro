@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import { Picture } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import CtaLink from '@/components/ui/CtaLink.astro';
 import Press from '@/components/layout/Press.astro';
@@ -38,40 +38,34 @@ const team = [
 
   <figure class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]">
     <div class="absolute inset-x-0 -top-[8%] h-[116%]">
-      <Image
+      <Picture
         src={studioImage}
         alt={`Văn phòng làm việc của ${site.name}`}
-        widths={[768, 1280, 1800, 2400]}
+        formats={['avif', 'webp']}
+        fallbackFormat="jpeg"
+        widths={[480, 640, 768, 1280, 1800, 2400]}
         sizes="100vw"
         loading="eager"
+        fetchpriority="high"
         data-parallax="10"
+        pictureAttributes={{ class: 'block h-full w-full' }}
         class="h-full w-full object-cover"
       />
     </div>
   </figure>
 
-  <section class="grid gap-px bg-line md:grid-cols-3">
+  <!--
+    Hai cột 4 dòng, cao bằng nhau. Trước đây band này ba cột với Hạng mục 8 mục ở
+    giữa — cao gấp đôi hai cột kia, mà gap-px bg-line kẻ vạch suốt chiều cao nên phần
+    trống của hai cột ngắn đọc ra như lỗi layout chứ không phải khoảng thở.
+  -->
+  <section class="grid gap-px bg-line md:grid-cols-2">
     <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
       <p class="label">Dịch vụ</p>
       <ul class="mt-6 space-y-3">
         {
           SERVICES.map((s) => (
             <li class="text-lead font-light">{s.label}</li>
-          ))
-        }
-      </ul>
-    </div>
-
-    <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
-      <p class="label">Hạng mục</p>
-      <ul class="mt-6 space-y-3">
-        {
-          PROJECT_TYPES.map((t) => (
-            <li>
-              <a href={`/projects?type=${t.slug}`} class="link-underline text-lead font-light">
-                {t.label}
-              </a>
-            </li>
           ))
         }
       </ul>
@@ -90,6 +84,26 @@ const team = [
         }
       </ol>
     </div>
+  </section>
+
+  <!--
+    Hạng mục tách ra thành một hàng riêng: đây là 8 đường dẫn điều hướng, khác thể
+    loại với hai danh sách tuyên bố ở trên. Trải ngang cũng cho mỗi hạng mục vùng bấm
+    rộng hơn nhiều so với khi bị nén trong một phần ba chiều rộng.
+  -->
+  <section class="border-t border-line px-5 py-14 md:px-10 md:py-20">
+    <p class="label">Hạng mục</p>
+    <ul class="mt-6 flex flex-wrap gap-x-10 gap-y-3">
+      {
+        PROJECT_TYPES.map((t) => (
+          <li>
+            <a href={`/projects?type=${t.slug}`} class="link-underline text-lead font-light">
+              {t.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </section>
 
   <Press label="Truyền thông" />

@@ -44,7 +44,11 @@ const countByType = (slug: string) => projects.filter((p) => p.data.type === slu
     </div>
   </section>
 
-  <WorkWall projects={projects} eagerCount={4} />
+  <!--
+    Ô chốt không mang data-project-type nên bộ lọc bỏ qua, luôn đứng cuối lưới ở mọi
+    hạng mục — vừa lấp ô lẻ của hàng cuối, vừa cho danh mục một lối đi tiếp.
+  -->
+  <WorkWall projects={projects} moreHref="/contact" moreLabel="Bắt đầu dự án của bạn" />
 
   <p class="label hidden px-5 py-16 md:px-10" data-empty>Chưa có dự án trong hạng mục này.</p>
 </BaseLayout>
