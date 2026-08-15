@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+import logo from '@/assets/logo.png';
 import { site } from '@/config/site';
 
 const path = Astro.url.pathname;
@@ -9,36 +11,29 @@ function isActive(href: string) {
 ---
 
 <!--
-  Hai trạng thái, do Motion.astro gắn/tháo data-over-hero:
-  - trên hero ảnh tối: trong suốt, chữ trắng
-  - còn lại: nền giấy mờ + viền dưới, chữ mực
+  Một trạng thái duy nhất: nền giấy mờ + viền dưới, chữ mực.
 
-  Không dùng mix-blend-difference: header buộc phải có z-index để nằm trên nội dung,
-  mà z-index tạo stacking context riêng nên blend bị cô lập — chữ trắng giữ nguyên
-  màu trắng trên nền sáng và mất tương phản hoàn toàn.
+  Trước đây header có thêm trạng thái trong suốt chữ trắng khi nằm trên ảnh hero.
+  Bỏ hẳn vì logo là ảnh raster màu cố định, trong đó dòng "THE ARCHITECTURE STUDIO"
+  màu đen: đặt lên ảnh công trình thì không lớp scrim nào lo được cho cả chữ cam
+  lẫn chữ đen — làm scrim đủ tối cho chữ cam thì chữ đen chìm, làm nhạt cho chữ đen
+  thì chữ cam chìm. Đổ trắng toàn bộ logo thì giải quyết được tương phản nhưng mất
+  màu nhận diện, mà màu là thứ không được phép mất.
+
+  Nền cố định còn xoá luôn hai thứ rắc rối: lớp scrim, và việc chữ hero trượt lên
+  chui vào sau header trong suốt.
 -->
 <header
-  class="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/90 text-ink backdrop-blur-sm transition-colors duration-500 data-[over-hero]:border-transparent data-[over-hero]:bg-transparent data-[over-hero]:backdrop-blur-none data-[over-hero]:text-white"
+  class="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/90 text-ink backdrop-blur-sm"
   data-site-header
 >
   <!--
     Checkbox đứng đầu header để mọi phần còn lại đều là sibling phía sau — nhờ vậy
-    trạng thái mở menu điều khiển được cả scrim lẫn thanh header bằng `~`, không cần JS.
+    trạng thái mở menu điều khiển được thanh header bằng `~`, không cần JS.
 
     Menu mobile bằng checkbox: tự reset sau mỗi lần điều hướng.
   -->
   <input id="nav-toggle" type="checkbox" class="peer sr-only" />
-
-  <!--
-    Scrim cho trạng thái trên hero: không thể trông chờ ảnh hero luôn tối ở phần
-    trên. Ảnh trời sáng làm chữ trắng mất hút, nên tự bảo đảm tương phản bằng một
-    lớp gradient mỏng thay vì phó mặc cho từng bức ảnh.
-  -->
-  <div
-    class="nav-scrim pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 via-black/25 to-transparent opacity-0 transition-opacity duration-500 [[data-over-hero]_&]:opacity-100"
-    aria-hidden="true"
-  >
-  </div>
 
   <div
     class="invisible fixed inset-0 bg-paper text-ink opacity-0 transition-[opacity,visibility] duration-500 ease-[var(--ease-out-expo)] max-md:peer-checked:visible max-md:peer-checked:opacity-100 md:hidden"
@@ -60,12 +55,18 @@ function isActive(href: string) {
   </div>
 
   <div class="nav-bar relative flex items-center justify-between px-5 py-2.5 md:px-10 md:py-5">
-    <a
-      href="/"
-      class="text-sm font-medium tracking-[0.2em] uppercase"
-      aria-label={`${site.name} — về trang chủ`}
-    >
-      {site.name}
+    <!--
+      Logo lấy từ nhận diện cũ của studio: hoa thiên điểu, chữ cam, dòng phụ đen.
+      Luôn giữ nguyên màu — không đổ trắng, không lọc màu ở bất kỳ trạng thái nào.
+    -->
+    <a href="/" aria-label={`${site.name} — về trang chủ`}>
+      <Image
+        src={logo}
+        alt={site.name}
+        densities={[1, 2]}
+        loading="eager"
+        class="site-logo h-8 w-auto md:h-9"
+      />
     </a>
 
     <nav class="hidden items-center gap-9 md:flex" aria-label="Menu chính">
@@ -83,19 +84,27 @@ function isActive(href: string) {
     </nav>
 
     <!--
-      h-11 = 44px: ngưỡng tối thiểu cho vùng chạm trên cảm ứng.
+      h-11/w-11 = 44px: ngưỡng tối thiểu cho vùng chạm trên cảm ứng.
 
-      Một nhãn duy nhất đổi chữ theo trạng thái. Trước đây overlay có thêm nhãn
-      "Đóng" đặt đúng toạ độ nhãn này (cùng h-11, cùng mép phải) nên khi mở menu
-      hai chữ chồng lên nhau. Nhãn ẩn bằng display:none nên tên khả dụng của
-      checkbox luôn đúng với chữ đang hiện.
+      Ba gạch thay cho chữ "Menu": ở khổ 375px mỗi ký tự chữ hoa giãn 0.18em ăn
+      gần 90px chiều ngang cạnh tên studio, mà biểu tượng chỉ tốn 22px và không
+      phải dịch. Ba gạch gập thành dấu X khi mở nên không cần nhãn "Đóng" nữa.
+
+      Chữ vẫn còn ở dạng sr-only và vẫn đổi theo trạng thái — đó là tên khả dụng
+      của checkbox, bỏ đi thì trình đọc màn hình chỉ đọc được "checkbox".
     -->
     <label
       for="nav-toggle"
-      class="-mr-2 flex h-11 cursor-pointer items-center px-2 text-sm tracking-[0.18em] uppercase select-none md:hidden"
+      class="-mr-2 flex h-11 w-11 cursor-pointer items-center justify-end select-none md:hidden"
     >
-      <span class="nav-label-open">Menu</span>
-      <span class="nav-label-close">Đóng</span>
+      <span class="nav-label-open sr-only">Mở menu</span>
+      <span class="nav-label-close sr-only">Đóng menu</span>
+
+      <span class="nav-burger" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
     </label>
   </div>
 </header>
@@ -108,21 +117,11 @@ function isActive(href: string) {
 
   /*
     Overlay menu nằm TRƯỚC thanh header trong DOM nên thanh header vẽ đè lên — cố ý,
-    để logo và nút đóng luôn bấm được. Hệ quả: khi đang ở trên hero, thanh header vẫn
-    mang chữ trắng và scrim tối, mà nền overlay lại là màu giấy → logo biến mất.
-    Nên lúc menu mở phải ép thanh header về màu mực và tắt scrim.
+    để logo và nút đóng luôn bấm được.
 
     Dùng `~` thay vì :has() để không phụ thuộc vào cách Astro chèn attribute scope
     vào trong đối số của :has().
   */
-  #nav-toggle:checked ~ .nav-bar {
-    color: var(--color-ink);
-  }
-
-  #nav-toggle:checked ~ .nav-scrim {
-    opacity: 0;
-  }
-
   .nav-label-close {
     display: none;
   }
@@ -133,5 +132,59 @@ function isActive(href: string) {
 
   #nav-toggle:checked ~ .nav-bar .nav-label-close {
     display: inline;
+  }
+
+  /*
+    Ba gạch 22×12: gạch giữa nằm đúng tâm nên khi mở, gạch trên và gạch dưới chỉ
+    cần trượt về tâm rồi xoay ±45° là thành dấu X cân. Vạch 1px hợp với nét chữ
+    mảnh của header; dày hơn thì nút nặng hơn cả tên studio bên trái.
+  */
+  .nav-burger {
+    position: relative;
+    display: block;
+    width: 1.375rem;
+    height: 0.75rem;
+  }
+
+  .nav-burger span {
+    position: absolute;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transition:
+      transform 0.4s var(--ease-out-expo),
+      opacity 0.2s linear;
+  }
+
+  .nav-burger span:nth-child(1) {
+    top: 0;
+  }
+
+  .nav-burger span:nth-child(2) {
+    top: 50%;
+  }
+
+  .nav-burger span:nth-child(3) {
+    top: 100%;
+  }
+
+  #nav-toggle:checked ~ .nav-bar .nav-burger span:nth-child(1) {
+    transform: translateY(0.375rem) rotate(45deg);
+  }
+
+  #nav-toggle:checked ~ .nav-bar .nav-burger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  #nav-toggle:checked ~ .nav-bar .nav-burger span:nth-child(3) {
+    transform: translateY(-0.375rem) rotate(-45deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-burger span {
+      transition: none;
+    }
   }
 </style>

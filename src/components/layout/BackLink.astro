@@ -1,0 +1,71 @@
+---
+interface Props {
+  /** Đích dự phòng khi không quay lui được. Cũng là href thật của thẻ <a>. */
+  href: string;
+  label?: string;
+  class?: string;
+}
+
+const { href, label = 'Quay lại', class: className } = Astro.props;
+---
+
+<!--
+  Lối thoát khỏi trang chi tiết.
+
+  Luôn là một thẻ <a> thật trỏ tới href: không JS, mở tab mới, hay bot đọc trang
+  thì vẫn đi được. Script bên dưới chỉ nâng cấp hành vi khi biết chắc mục lịch sử
+  phía trước là của chính site này.
+-->
+<a href={href} data-back-link class:list={['group inline-flex w-fit items-center gap-2', className]}>
+  <span
+    class="inline-block transition-transform duration-500 ease-[var(--ease-hover)] group-hover:-translate-x-1"
+    aria-hidden="true">←</span
+  >
+  {label}
+</a>
+
+<script>
+  /*
+    Vì sao ưu tiên history.back() thay vì cứ đi thẳng tới href: người xem bấm vào ô
+    thứ 9 của lưới rồi muốn ra, đi tới /projects sẽ ném họ về đầu trang và phải cuộn
+    lại từ đầu. Quay lui thì ClientRouter khôi phục đúng vị trí cuộn cũ.
+
+    Nhưng chỉ quay lui khi mục lịch sử phía trước thật sự là của site này — vào
+    thẳng trang dự án từ Google mà gọi back() là ném người ta ngược về Google.
+    Hai đường nhận biết, đủ cho cả hai kiểu điều hướng:
+      - history.state.index: ClientRouter tăng chỉ số này mỗi lần điều hướng nội bộ,
+        nên > 0 nghĩa là đã có ít nhất một trang cùng site ở phía trước.
+      - document.referrer cùng origin: bắt trường hợp tải trang đầy đủ (JS của
+        router chưa chạy, hoặc người dùng tắt View Transitions).
+
+    Uỷ quyền trên document để sống sót qua View Transitions — listener gắn thẳng
+    vào thẻ <a> sẽ mất khi router thay nội dung trang.
+  */
+  function cameFromThisSite() {
+    const index = (history.state as { index?: number } | null)?.index;
+    if (typeof index === 'number' && index > 0) return true;
+
+    if (!document.referrer) return false;
+    try {
+      return new URL(document.referrer).origin === location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  document.addEventListener('click', (event) => {
+    // Chuột giữa, Ctrl/Cmd-click: người dùng đang muốn mở tab mới, đừng chặn.
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const link = target.closest('[data-back-link]');
+    if (!link || !cameFromThisSite()) return;
+
+    event.preventDefault();
+    history.back();
+  });
+</script>

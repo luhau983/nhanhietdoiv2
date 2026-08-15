@@ -17,11 +17,35 @@
   --font-sans:
     'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --text-display: clamp(2.75rem, 8vw, 7.5rem);
-  --text-title: clamp(1.75rem, 3.5vw, 3.25rem);
-  --text-lead: clamp(1.0625rem, 1.5vw, 1.375rem);
+  /*
+    Thang chữ hạ xuống một bậc so với bản đầu.
+
+    Đo bản cũ ở 1440px: h1 ra 115px, còn đoạn tóm tắt dự án ra 50px — tức là một
+    đoạn văn xuôi lại to gần bằng tiêu đề, thành ra cả trang không có thứ bậc, chỉ
+    thấy chữ to. Hệ số vw cũ (8vw cho display) cũng phóng quá nhanh: qua mốc 1440
+    là chạm trần 120px.
+
+    Bản mới ở 375 / 1440px:
+      display 36 / 72   (cũ 44 / 115)
+      title   22 / 34   (cũ 28 / 50)
+      lead    16 / 19   (cũ 17 / 22)
+  */
+  --text-display: clamp(2.25rem, 5vw, 4.5rem);
+  --text-title: clamp(1.375rem, 2.4vw, 2.125rem);
+  --text-lead: clamp(1rem, 1.3vw, 1.1875rem);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /*
+    Đường cong cho tương tác hover.
+
+    Không dùng ease-out-expo ở đây: expo dồn ~90% quãng đường vào 15% thời gian
+    đầu, hợp với thứ chạy một lần rồi thôi (reveal, fade ảnh) nhưng đặt lên phép
+    phóng ảnh thì thành một cú giật rồi bò — mắt bắt được từng bước lấy mẫu lại
+    của bitmap ở đoạn bò đó. Ease-out-cubic rải đều hơn nên cùng quãng 1.04 lần
+    mà không thấy giật.
+  */
+  --ease-hover: cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 @layer base {

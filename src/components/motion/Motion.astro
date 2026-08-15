@@ -136,42 +136,17 @@
     });
   }
 
-  /**
-   * Đổi trạng thái header khi hero còn che vùng header hay không.
-   * rootMargin âm ở cạnh trên co vùng quan sát xuống đúng chiều cao header, nên
-   * hero "hết giao" ngay lúc đáy hero đi qua header — không cần đo scroll từng frame.
-   */
-  function initHeaderTheme() {
-    const header = document.querySelector<HTMLElement>('[data-site-header]');
-    if (!header) return;
+  /*
+    Không còn initHeaderTheme.
 
-    const hero = document.querySelector<HTMLElement>('[data-hero]');
-    if (!hero) {
-      header.removeAttribute('data-over-hero');
-      return;
-    }
-
-    const headerHeight = header.offsetHeight;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) header.setAttribute('data-over-hero', '');
-        else header.removeAttribute('data-over-hero');
-      },
-      { rootMargin: `-${headerHeight}px 0px 0px 0px`, threshold: 0 },
-    );
-
-    observer.observe(hero);
-    cleanups.push(() => {
-      observer.disconnect();
-      header.removeAttribute('data-over-hero');
-    });
-  }
-
+    Header từng có hai trạng thái — trong suốt chữ trắng khi nằm trên ảnh hero, nền
+    giấy chữ mực khi hết hero — do một IntersectionObserver ở đây bật/tắt. Bỏ đi vì
+    logo là ảnh raster màu cố định phải giữ nguyên màu ở mọi nơi, nên header buộc
+    phải có nền ổn định. Xem phần chú thích đầu Header.astro.
+  */
   function boot() {
     teardown();
     initSmoothScroll();
-    initHeaderTheme();
     initReveal();
     initImageFade();
     void initParallax();

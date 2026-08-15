@@ -1,7 +1,6 @@
 ---
 import { getImage } from 'astro:assets';
 import landscape from '@/assets/hero.jpg';
-import portrait from '@/assets/hero-portrait.jpg';
 
 interface Props {
   alt: string;
@@ -10,32 +9,26 @@ interface Props {
 const { alt } = Astro.props;
 
 /*
-  Art direction thật bằng <picture> thay vì một ảnh dùng chung cho mọi khung.
+  Một nguồn ảnh ngang cho mọi khổ — KHÔNG còn art direction bằng ảnh dọc.
 
-  Vì sao: nhồi ảnh ngang 3:2 vào màn hình dọc của điện thoại thì object-cover phải
-  cắt hai bên rất nhiều, công trình bị phóng to và mất đầu mất đuôi. Ngược lại nhồi
-  ảnh dọc vào khung ngang của desktop cũng đúng lỗi đó theo chiều kia — đây chính là
-  lý do hero trước đây trông "quá lớn".
+  Trước đây hero là khung dọc cao 74svh trên điện thoại nên phải có bản cắt dọc
+  riêng (@/assets/hero-portrait.jpg), nếu không object-cover sẽ cắt hai bên ảnh
+  ngang rất nhiều. Giờ hero là ô đầu của lưới, tỉ lệ 4:3 ở mobile và 3:1 ở desktop
+  — cả hai đều là khung ngang, nên bản cắt dọc không còn khung nào để phục vụ.
 
-  Dùng <picture> + media query nên điện thoại chỉ tải đúng ảnh dọc, không tốn
-  dữ liệu cho ảnh desktop rồi ẩn đi bằng CSS.
+  hero-portrait.jpg vì vậy thành tài sản không dùng tới; để lại trong assets phòng
+  khi cần dựng lại hero dọc, Astro không đóng gói ảnh nào không được import.
 */
-const [desktopAvif, desktopWebp, mobileAvif, mobileWebp, fallback] = await Promise.all([
-  getImage({ src: landscape, widths: [1280, 1800, 2400], format: 'avif' }),
-  getImage({ src: landscape, widths: [1280, 1800, 2400], format: 'webp' }),
-  getImage({ src: portrait, widths: [640, 900, 1280], format: 'avif' }),
-  getImage({ src: portrait, widths: [640, 900, 1280], format: 'webp' }),
+const [avif, webp, fallback] = await Promise.all([
+  getImage({ src: landscape, widths: [640, 900, 1280, 1800, 2400], format: 'avif' }),
+  getImage({ src: landscape, widths: [640, 900, 1280, 1800, 2400], format: 'webp' }),
   getImage({ src: landscape, width: 1800, format: 'jpeg' }),
 ]);
-
-const DESKTOP_MEDIA = '(min-width: 768px)';
 ---
 
 <picture>
-  <source media={DESKTOP_MEDIA} type="image/avif" srcset={desktopAvif.srcSet.attribute} sizes="100vw" />
-  <source media={DESKTOP_MEDIA} type="image/webp" srcset={desktopWebp.srcSet.attribute} sizes="100vw" />
-  <source type="image/avif" srcset={mobileAvif.srcSet.attribute} sizes="100vw" />
-  <source type="image/webp" srcset={mobileWebp.srcSet.attribute} sizes="100vw" />
+  <source type="image/avif" srcset={avif.srcSet.attribute} sizes="100vw" />
+  <source type="image/webp" srcset={webp.srcSet.attribute} sizes="100vw" />
   <img
     src={fallback.src}
     alt={alt}

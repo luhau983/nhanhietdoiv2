@@ -31,49 +31,47 @@ const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu 
 
 <BaseLayout>
   <!--
-    Hero: tên studio, một dòng định vị, một lối xuống. Không hơn.
+    Hero nằm TRONG lưới, là ô đầu tràn hết một hàng — không còn là section riêng.
 
-    Chiều cao thấp hơn một màn hình đầy để lưới dự án hé lên ở mép dưới — vừa nói
-    cho người xem biết còn nội dung bên dưới, vừa làm ảnh hero đọc ra kích thước
-    thật thay vì bị phóng full màn.
+    Hero rời trước đây cao 74svh, tức 601/812px trên điện thoại, nên vào trang chỉ
+    thấy hai ô dự án ló ở mép dưới; tiêu chí "vô web là biết ngay có dự án gì" hỏng
+    ngay ở màn đầu. Gộp vào lưới thì màn đầu 375×812 hiện một ảnh lớn + 5 dự án,
+    màn 1440×900 hiện ảnh lớn + trọn hàng 6 ô.
+
+    Tỉ lệ đổi theo khổ chứ không dùng svh: 4:3 ở điện thoại, 16:9 ở tablet, 3:1 ở
+    desktop. Chiều cao khi đó bám theo chiều rộng lưới nên ô hero và ô dự án luôn
+    cùng một hệ, không có ô nào bị svh kéo lệch khỏi nhịp.
+
+    Bỏ nút "11 dự án ↓": lưới đã nằm ngay dưới ảnh, không còn gì để dẫn xuống.
   -->
-  <section
-    class="relative flex h-[74svh] min-h-[26rem] flex-col overflow-hidden md:h-[88svh]"
-    data-hero
-  >
-    <div class="absolute inset-x-0 -top-[7%] h-[114%]">
-      <Hero alt={`Công trình tiêu biểu của ${site.name}`} />
-    </div>
-
-    <div
-      class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/65"
-      aria-hidden="true"
-    >
-    </div>
-
-    <div class="relative mt-auto px-5 pb-12 text-white md:px-10 md:pb-14">
-      <h1 class="text-display leading-[0.9] font-light tracking-[-0.02em]">{site.name}</h1>
-
-      <p class="mt-4 max-w-[34ch] text-[1.125rem] leading-snug text-white/90 md:text-[1.5rem]">
-        {site.positioning} — {site.city}
-      </p>
-
-      <a
-        href="#work"
-        class="mt-8 inline-flex items-center gap-2 text-[0.6875rem] tracking-[0.18em] uppercase"
+  <section id="work">
+    <WorkWall projects={wall} moreHref={moreHref} moreLabel={moreLabel}>
+      <div
+        slot="lead"
+        class="relative aspect-[4/3] overflow-hidden bg-paper-deep sm:aspect-[16/9] lg:aspect-[3/1]"
       >
-        {all.length} dự án
-        <span aria-hidden="true">↓</span>
-      </a>
-    </div>
-  </section>
+        <div class="absolute inset-x-0 -top-[7%] h-[114%]">
+          <Hero alt={`Công trình tiêu biểu của ${site.name}`} />
+        </div>
 
-  <!--
-    Toàn bộ công trình ngay sau hero, không chèn tuyên ngôn hay dịch vụ vào giữa.
-    Ảnh trả lời câu "studio này làm kiến trúc gì" nhanh hơn mọi đoạn văn.
-  -->
-  <section id="work" class="scroll-mt-0">
-    <WorkWall projects={wall} moreHref={moreHref} moreLabel={moreLabel} />
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/25"
+          aria-hidden="true"
+        >
+        </div>
+
+        <div class="absolute inset-x-0 bottom-0 p-4 text-white md:p-5 lg:p-10">
+          <h1 class="text-display leading-[0.9] font-light tracking-[-0.02em]">{site.name}</h1>
+
+          <!-- text-balance: ở 375px dòng này vắt sang dòng hai đúng một chữ "Nai". -->
+          <p
+            class="mt-2 max-w-[34ch] text-sm leading-snug text-balance text-white/85 md:max-w-[54ch] md:text-[1.125rem]"
+          >
+            {site.positioning} — {site.city}
+          </p>
+        </div>
+      </div>
+    </WorkWall>
   </section>
 
   <Press />

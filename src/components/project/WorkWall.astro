@@ -12,6 +12,19 @@ interface Props {
   moreLabel?: string;
 }
 
+/*
+  Slot "lead": ô mở đầu tràn hết một hàng lưới, dùng cho hero trang chủ.
+
+  Đặt hero vào trong chính <ul> chứ không để thành section riêng phía trên: hero
+  rời cao 74svh nuốt 74% màn điện thoại, vào trang chỉ thấy hai ô dự án ló ở mép
+  dưới. Thành ô đầu của lưới thì hero và lưới là một khối liền, màn đầu ở 375×812
+  hiện một ảnh lớn + 5 dự án.
+
+  col-span-full nên nó luôn chiếm trọn một hàng ở mọi breakpoint, giữ nguyên phép
+  chia hết của lưới: 2 cột → 2+11+1=14, 3 → 15, 4 → 16, 6 → 18, không hàng nào lẻ ô.
+*/
+const hasLead = Astro.slots.has('lead');
+
 // Mặc định 6 = đúng một hàng đầy ở breakpoint rộng nhất (lg:grid-cols-6). Để 4 như
 // trước thì hai ô cuối của hàng đầu vẫn nằm trong màn hình đầu mà lại tải lazy.
 const { projects, eagerCount = 6, moreHref, moreLabel } = Astro.props;
@@ -43,6 +56,14 @@ const TILE_WIDTHS = [240, 360, 480, 640, 960];
   data-work-wall
 >
   {
+    hasLead && (
+      <li class="col-span-full">
+        <slot name="lead" />
+      </li>
+    )
+  }
+
+  {
     projects.map((project, i) => (
       <li data-project-type={project.data.type}>
         <a
@@ -70,28 +91,36 @@ const TILE_WIDTHS = [240, 360, 480, 640, 960];
             fetchpriority={i === 0 ? 'high' : 'auto'}
             decoding={i === 0 ? 'sync' : 'async'}
             data-img-fade={i < eagerCount ? undefined : true}
-            class="h-full w-full object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.06]"
+            class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
           />
 
+          <!--
+            Gradient nhạt hơn hẳn ở mobile: trên desktop lớp phủ chỉ bật lúc hover
+            nên đậm bao nhiêu cũng được, còn ở mobile nó bật thường trực cho cả 11
+            ô — để nguyên from-black/80 thì cuộn xuống chỉ thấy một dãy hộp đen,
+            ảnh công trình bị dìm mất nửa dưới.
+          -->
           <div
-            class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/10 to-transparent p-4 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100 max-md:opacity-100 md:p-5"
+            class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/55 via-black/5 to-transparent p-4 opacity-0 transition-opacity duration-500 ease-[var(--ease-hover)] group-hover:opacity-100 group-focus-visible:opacity-100 max-md:opacity-100 md:from-black/80 md:via-black/10 md:p-5"
           >
             <!--
-              line-clamp-2: ô trên mobile chỉ rộng ~187px, tên dự án thật dài như
-              "Nhà nghỉ dưỡng 500 m² đưa mảng xanh vào từng không gian nhỏ" sẽ đẩy
-              nhãn hạng mục tràn khỏi ô nếu để xuống dòng tự do.
+              Mobile chỉ còn một dòng tên. Ô rộng ~187px nên "Căn hộ | Penthouse —
+              2021" xuống ba dòng và đẩy ô lệch hẳn so với ô bên cạnh; hạng mục và
+              năm vốn đã có ở chip lọc trang /projects lẫn trang chi tiết.
             -->
-            <p class="line-clamp-2 text-sm leading-tight text-white md:text-base">
+            <p class="line-clamp-1 text-sm leading-tight text-white md:line-clamp-2 md:text-base">
               {project.data.title}
             </p>
-            <p class="mt-1.5 text-[0.625rem] tracking-[0.16em] text-white/75 uppercase">
+            <p
+              class="hidden text-[0.625rem] tracking-[0.16em] text-white/75 uppercase md:mt-1.5 md:block"
+            >
               {typeLabel(project.data.type)} — {project.data.year}
             </p>
 
             {/* Nhãn link hiện khi hover: nói rõ ô ảnh dẫn đi đâu, không để người
                 xem phải đoán xem có bấm được không. */}
             <span
-              class="mt-3 hidden text-[0.625rem] tracking-[0.16em] text-white uppercase md:block md:opacity-0 md:transition-opacity md:duration-500 md:group-hover:opacity-100"
+              class="mt-3 hidden text-[0.625rem] tracking-[0.16em] text-white uppercase md:block md:opacity-0 md:transition-opacity md:duration-500 md:ease-[var(--ease-hover)] md:group-hover:opacity-100"
             >
               Xem dự án
               <span class="ml-1.5 inline-block" aria-hidden="true">
@@ -125,3 +154,25 @@ const TILE_WIDTHS = [240, 360, 480, 640, 960];
     )
   }
 </ul>
+
+<style>
+  /*
+    :global vì <Image> của Astro không nhận attribute scope, nên selector bị bó
+    scope sẽ không khớp với thẻ img nó sinh ra. Tên lớp chỉ dùng ở file này.
+  */
+  @media (hover: hover) {
+    /*
+      Nâng ảnh lên layer riêng ngay lúc trỏ vào ô. Không có bước này thì mỗi khung
+      hình của phép phóng là một lần raster lại bitmap; ở đoạn cuối, khi bước scale
+      nhỏ dần xuống dưới một pixel, mắt bắt được đúng chỗ đó thành ra thấy rung.
+
+      Đặt trên :hover chứ không đặt sẵn: để sẵn thì 11 ô là 11 layer thường trú,
+      tốn bộ nhớ ảnh mà 10 trong số đó không hề chuyển động.
+    */
+    :global(.group:hover .tile-media) {
+      /* Khai cả scale: Tailwind 4 dịch scale-[1.04] ra thuộc tính `scale` riêng
+         chứ không gộp vào `transform` nữa. */
+      will-change: transform, scale;
+    }
+  }
+</style>

@@ -2,7 +2,7 @@
 // WebP một định dạng: 73 ảnh gallery nhân AVIF là phần đốt build nhiều nhất
 // (đo được ~25 phút build, dist 189MB). Ảnh gallery đều lazy dưới màn hình đầu nên
 // AVIF ít giá trị nhất ở đây; chỉ hero giữ AVIF.
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -12,57 +12,331 @@ interface Props {
 
 const { gallery, title } = Astro.props;
 
-// Ảnh hẹp bị chặn ở max-w-4xl (56rem = 896px) nên DPR 2 chỉ cần tới ~1800px;
-// ở mobile khối chiếm 92vw.
-const NARROW_SIZES = '(min-width: 1024px) 56rem, 92vw';
+/*
+  Lưới ô nhỏ thay cho cột ảnh lớn xếp dọc.
+
+  Bản cũ đổ mỗi ảnh một khối rộng gần hết màn, xen kẽ tràn viền (375px) và thụt lề
+  (335px). Ở khổ điện thoại chênh lệch 40px đó không đọc ra là "nhịp" mà chỉ thấy lề
+  lúc thò lúc thụt, mỗi ảnh lại chiếm trọn một màn nên phải cuộn 8 màn mới xem hết
+  một dự án. Lưới ô vuông cho thấy cả bộ ảnh cùng lúc, và dùng lại đúng hệ lưới của
+  trang chủ nên cả site chung một ngôn ngữ.
+
+  Ảnh nào tác giả đánh dấu wide vẫn được ưu tiên: chiếm 2 cột, tỉ lệ 2:1 nên cao
+  bằng ô vuông bên cạnh, hàng không bị lệch.
+*/
+const TILE_SIZES = '(min-width: 1024px) 25vw, (min-width: 768px) 33.33vw, 50vw';
+const WIDE_SIZES = '(min-width: 1024px) 50vw, (min-width: 768px) 66.66vw, 100vw';
+const TILE_WIDTHS = [240, 360, 480, 720, 960];
+
+/*
+  Bản phóng to cho lightbox. 1800px trùng với một bậc srcset cũ nên phần lớn ảnh
+  dùng lại được bản đã encode, không phát sinh thêm lượt build đáng kể.
+*/
+const fullSizes = await Promise.all(
+  gallery.map((item) => getImage({ src: item.src, width: 1800, format: 'webp', quality: 82 })),
+);
 ---
 
 {
   gallery.length > 0 && (
-    <div class="space-y-16 md:space-y-28">
-      {gallery.map((item, i) =>
-        item.wide ? (
-          // Ảnh tràn viền: dùng cho toàn cảnh, mặt đứng. Tạo nhịp nghỉ giữa các
-          // đoạn nội dung hẹp.
-          <figure data-reveal>
-            <div class="relative overflow-hidden bg-paper-deep">
+    <>
+      <ul class="grid grid-cols-2 gap-px bg-line md:grid-cols-3 lg:grid-cols-4" data-reveal>
+        {gallery.map((item, i) => (
+          <li class:list={[item.wide && 'col-span-2']}>
+            {/*
+              Nút chứ không phải thẻ a: đây là hành động mở lớp xem ảnh ngay tại
+              trang, không phải điều hướng sang địa chỉ khác.
+            */}
+            <button
+              type="button"
+              data-lightbox-open
+              data-index={i}
+              data-full={fullSizes[i]?.src}
+              data-caption={item.caption ?? ''}
+              class:list={[
+                'group relative block w-full cursor-zoom-in overflow-hidden bg-paper-deep',
+                item.wide ? 'aspect-[2/1]' : 'aspect-square',
+              ]}
+            >
               <Image
                 src={item.src}
                 alt={item.caption ?? `${title} — ảnh ${i + 1}`}
-                widths={[480, 768, 1280, 1800, 2400]}
-                sizes="100vw"
+                quality={68}
+                widths={TILE_WIDTHS}
+                sizes={item.wide ? WIDE_SIZES : TILE_SIZES}
                 loading="lazy"
                 decoding="async"
                 data-img-fade
-                class="w-full"
+                class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
               />
-            </div>
-            {item.caption && (
-              <figcaption class="label mt-3 px-5 md:px-10">{item.caption}</figcaption>
-            )}
-          </figure>
-        ) : (
-          // Canh trái theo đúng trục của tiêu đề và phần chữ phía trên, bỏ mx-auto:
-          // ảnh hẹp canh giữa xen giữa các khối canh trái làm trang gãy nhịp.
-          <figure class="px-5 md:px-10" data-reveal>
-            <div class="max-w-4xl">
-              <div class="relative overflow-hidden bg-paper-deep">
-                <Image
-                  src={item.src}
-                  alt={item.caption ?? `${title} — ảnh ${i + 1}`}
-                  widths={[480, 640, 960, 1400, 1800]}
-                  sizes={NARROW_SIZES}
-                  loading="lazy"
-                  decoding="async"
-                  data-img-fade
-                  class="w-full"
-                />
-              </div>
-              {item.caption && <figcaption class="label mt-3">{item.caption}</figcaption>}
-            </div>
-          </figure>
-        ),
-      )}
-    </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/*
+        <dialog> thay vì tự dựng overlay bằng div: showModal() có sẵn lớp phủ nền,
+        khoá tiêu điểm trong hộp thoại, đóng bằng Esc và trả tiêu điểm về nút vừa
+        bấm — bốn thứ tự viết lại đều dễ sai.
+      */}
+      <dialog data-lightbox class="lightbox" aria-label={`Ảnh dự án ${title}`}>
+        <div class="lightbox-stage" data-lightbox-stage>
+          <img data-lightbox-image alt="" />
+        </div>
+
+        <p class="lightbox-caption label" data-lightbox-caption />
+
+        <button type="button" class="lightbox-btn lightbox-close" data-lightbox-close>
+          <span class="sr-only">Đóng</span>
+          <span aria-hidden="true">✕</span>
+        </button>
+
+        <button type="button" class="lightbox-btn lightbox-prev" data-lightbox-step="-1">
+          <span class="sr-only">Ảnh trước</span>
+          <span aria-hidden="true">←</span>
+        </button>
+
+        <button type="button" class="lightbox-btn lightbox-next" data-lightbox-step="1">
+          <span class="sr-only">Ảnh sau</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </dialog>
+    </>
   )
 }
+
+<style>
+  @media (hover: hover) {
+    :global(.group:hover .tile-media) {
+      will-change: transform, scale;
+    }
+  }
+
+  .lightbox {
+    max-width: 100vw;
+    max-height: 100dvh;
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .lightbox::backdrop {
+    background-color: rgb(0 0 0 / 0.9);
+  }
+
+  /*
+    place-items dùng từ khoá `safe`: khi ảnh phóng to lớn hơn khung, canh giữa
+    thường sẽ đẩy phần tràn ra đều hai bên và không cuộn tới được mép trái/trên.
+    `safe center` tự lùi về start đúng lúc đó.
+  */
+  .lightbox-stage {
+    display: grid;
+    place-items: safe center;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lightbox-stage img {
+    max-width: 100%;
+    max-height: 100dvh;
+    cursor: zoom-in;
+  }
+
+  /*
+    Phóng to = bỏ mọi giới hạn kích thước để ảnh về đúng cỡ đã tải (1800px), khung
+    thành vùng cuộn. Không dùng transform: scale vì ảnh phóng bằng transform vẫn
+    raster ở kích thước cũ nên nhoè, còn cách này trình duyệt vẽ lại ở độ phân giải
+    thật của file.
+  */
+  .lightbox-stage[data-zoomed] img {
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    cursor: zoom-out;
+  }
+
+  .lightbox-caption {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 1rem 1.25rem;
+    color: color-mix(in oklab, var(--color-paper) 70%, transparent);
+    text-align: center;
+  }
+
+  .lightbox-caption:empty {
+    display: none;
+  }
+
+  .lightbox-btn {
+    position: absolute;
+    display: flex;
+    /* 44px: ngưỡng vùng chạm, giống nút menu. */
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-color: color-mix(in oklab, var(--color-ink) 55%, transparent);
+    color: var(--color-paper);
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+
+  .lightbox-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .lightbox-prev,
+  .lightbox-next {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .lightbox-prev {
+    left: 0.75rem;
+  }
+
+  .lightbox-next {
+    right: 0.75rem;
+  }
+</style>
+
+<script>
+  /*
+    Uỷ quyền trên document, truy vấn phần tử ngay lúc xảy ra sự kiện: hộp thoại là
+    markup của từng trang nên tham chiếu lưu sẵn sẽ chết sau mỗi lần View Transitions
+    thay nội dung.
+  */
+  function stage() {
+    return document.querySelector<HTMLElement>('[data-lightbox-stage]');
+  }
+
+  function triggers() {
+    return [...document.querySelectorAll<HTMLButtonElement>('[data-lightbox-open]')];
+  }
+
+  let current = -1;
+  let isOpen = false;
+
+  function show(index: number) {
+    const items = triggers();
+    if (!items.length) return;
+
+    // Vòng lại hai đầu: xem tới ảnh cuối bấm tiếp thì về ảnh đầu.
+    current = (index + items.length) % items.length;
+
+    const trigger = items[current];
+    const image = document.querySelector<HTMLImageElement>('[data-lightbox-image]');
+    const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const inner = document.querySelector<HTMLImageElement>(`[data-index="${current}"] img`);
+    if (!trigger || !image) return;
+
+    image.src = trigger.dataset.full ?? '';
+    image.alt = inner?.alt ?? '';
+    if (caption) caption.textContent = trigger.dataset.caption || '';
+
+    stage()?.removeAttribute('data-zoomed');
+  }
+
+  function open(index: number) {
+    const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+    if (!dialog) return;
+
+    show(index);
+    dialog.showModal();
+    isOpen = true;
+
+    // Lenis giữ quyền điều khiển cuộn của trang; không dừng thì bánh xe chuột vẫn
+    // cuộn trang nền phía sau lớp phủ thay vì cuộn ảnh đang phóng to.
+    window.__lenis?.stop();
+  }
+
+  /*
+    Mọi đường thoát đều đi qua đây, kể cả Esc.
+
+    KHÔNG dựa vào sự kiện `close` của <dialog> để trả Lenis lại: đo trong dev thấy
+    sự kiện này không phải lúc nào cũng bắn, và nếu nó lỡ một nhịp thì Lenis kẹt ở
+    trạng thái stop — người xem đóng lớp ảnh xong không cuộn trang được nữa, hỏng
+    nặng hơn nhiều so với việc tự gọi start() ở đây.
+  */
+  function close() {
+    const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+    if (dialog?.open) dialog.close();
+
+    isOpen = false;
+    stage()?.removeAttribute('data-zoomed');
+    window.__lenis?.start();
+  }
+
+  function toggleZoom() {
+    const el = stage();
+    if (!el) return;
+
+    if (el.hasAttribute('data-zoomed')) {
+      el.removeAttribute('data-zoomed');
+      return;
+    }
+
+    el.setAttribute('data-zoomed', '');
+    // Nhảy về giữa ảnh: mặc định vùng cuộn đứng ở mép trái/trên, người xem sẽ tưởng
+    // ảnh bị cắt mất.
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const trigger = target.closest<HTMLElement>('[data-lightbox-open]');
+    if (trigger) {
+      open(Number(trigger.dataset.index ?? 0));
+      return;
+    }
+
+    if (target.closest('[data-lightbox-close]')) {
+      close();
+      return;
+    }
+
+    const step = target.closest<HTMLElement>('[data-lightbox-step]');
+    if (step) {
+      show(current + Number(step.dataset.lightboxStep));
+      return;
+    }
+
+    if (target.closest('[data-lightbox-image]')) {
+      toggleZoom();
+      return;
+    }
+
+    // Bấm ra vùng trống quanh ảnh thì đóng — thói quen chung của mọi lớp xem ảnh.
+    if (target.closest('[data-lightbox-stage]')) close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (!isOpen) return;
+
+    if (event.key === 'ArrowRight') show(current + 1);
+    if (event.key === 'ArrowLeft') show(current - 1);
+
+    // <dialog> tự đóng khi bấm Esc, nhưng vẫn phải chạy qua close() để dọn dẹp.
+    // Gọi lúc này thì hộp thoại còn đang mở, close() sẽ tự bỏ qua nếu đã đóng rồi.
+    if (event.key === 'Escape') close();
+  });
+
+  // Điều hướng bằng View Transitions khi lớp ảnh đang mở: hộp thoại bị thay mất
+  // nhưng Lenis thì vẫn đang stop, phải trả lại.
+  document.addEventListener('astro:before-swap', () => {
+    if (isOpen) close();
+  });
+</script>

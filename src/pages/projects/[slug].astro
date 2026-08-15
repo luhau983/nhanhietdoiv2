@@ -2,6 +2,7 @@
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import { getImage, Picture } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BackLink from '@/components/layout/BackLink.astro';
 import SpecTable from '@/components/project/SpecTable.astro';
 import Gallery from '@/components/project/Gallery.astro';
 import { typeLabel } from '@/config/taxonomy';
@@ -47,7 +48,7 @@ const ogImage = await getImage({
 
 <BaseLayout title={d.title} description={d.excerpt} ogImage={ogImage.src}>
   <article>
-    <header class="relative h-[86svh] min-h-[30rem] overflow-hidden" data-hero>
+    <header class="relative h-[86svh] min-h-[30rem] overflow-hidden">
       <div class="absolute inset-x-0 -top-[6%] h-[112%]">
         <!--
           LCP của trang này. AVIF trước, WebP sau, JPEG chốt hạ — ảnh hero full-bleed
@@ -78,14 +79,30 @@ const ogImage = await getImage({
       </div>
 
       <div
-        class="relative flex h-full flex-col justify-end px-5 pb-12 text-white md:px-10 md:pb-16"
+        class="relative flex h-full flex-col justify-end px-5 pt-20 pb-12 text-white md:px-10 md:pt-24 md:pb-16"
       >
-        <p class="text-[0.6875rem] tracking-[0.18em] text-white/70 uppercase">
-          {typeLabel(d.type)} — {d.location} — {d.year}
-        </p>
-        <h1 class="mt-4 max-w-[24ch] text-display leading-[0.92] font-light tracking-[-0.02em]">
-          {d.title}
-        </h1>
+        <!--
+          pt-20/pt-24 để nút nằm dưới thanh header (cao 65px ở mobile, 69px ở desktop)
+          chứ không chui vào sau nó; mb-auto đẩy phần tên dự án về lại đáy hero.
+
+          text-shadow: từ khi header có nền giấy cố định thì lớp scrim tối ở đỉnh hero
+          không còn, mà đây là chữ trắng nằm trên vùng ảnh chưa bị gradient của hero
+          làm tối bao nhiêu — gặp ảnh trời sáng là chìm. Bóng đổ rẻ hơn việc thêm một
+          lớp phủ nữa chỉ để đỡ một dòng chữ.
+        -->
+        <BackLink
+          href="/projects"
+          class="mb-auto text-[0.6875rem] tracking-[0.18em] uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.55)]"
+        />
+
+        <div>
+          <p class="text-[0.6875rem] tracking-[0.18em] text-white/70 uppercase">
+            {typeLabel(d.type)} — {d.location} — {d.year}
+          </p>
+          <h1 class="mt-4 max-w-[24ch] text-display leading-[0.92] font-light tracking-[-0.02em]">
+            {d.title}
+          </h1>
+        </div>
       </div>
     </header>
 
