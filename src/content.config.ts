@@ -1,6 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
-import { PROJECT_STATUSES, PROJECT_TYPE_SLUGS } from '@/config/taxonomy';
+import { GALLERY_KIND_SLUGS, PROJECT_STATUSES, PROJECT_TYPE_SLUGS } from '@/config/taxonomy';
 
 /**
  * Content layer. Thêm dự án = thêm 1 file .mdx + 1 thư mục ảnh, commit là xong.
@@ -36,6 +36,9 @@ const projects = defineCollection({
             caption: z.string().optional(),
             // wide = tràn viền, dùng cho ảnh toàn cảnh. Mặc định nằm trong lưới.
             wide: z.boolean().default(false),
+            // Tab chứa ảnh. Mặc định '3d' vì phần lớn hồ sơ studio là bản render;
+            // ảnh chụp công trình xong phải khai thuc-te thì mới sang tab đúng.
+            kind: z.enum(GALLERY_KIND_SLUGS).default('3d'),
           }),
         )
         .default([]),

@@ -81,16 +81,69 @@
     cleanups.push(() => observer.disconnect());
   }
 
-  function initImageFade() {
-    document.querySelectorAll<HTMLImageElement>('[data-img-fade]').forEach((img) => {
-      if (img.complete) {
+  /*
+    Ảnh load xong thì cho nó hiện lên và tắt skeleton của khung chứa nó.
+
+    Quét hai nhóm rồi gộp qua Set vì chúng chồng nhau một phần: [data-img-fade] là
+    ảnh tự mờ dần, còn ảnh nằm trong [data-skeleton] gồm cả ảnh eager không fade —
+    khung của chúng vẫn phải tắt vệt sáng, nếu không lưới quét sáng vĩnh viễn.
+  */
+  function initImageLoading() {
+    const images = new Set<HTMLImageElement>([
+      ...document.querySelectorAll<HTMLImageElement>('[data-img-fade]'),
+      ...document.querySelectorAll<HTMLImageElement>('[data-skeleton] img'),
+    ]);
+
+    images.forEach((img) => {
+      const done = () => {
         img.classList.add('is-loaded');
+        img.closest('[data-skeleton]')?.setAttribute('data-loaded', '');
+      };
+
+      // Ảnh đã nằm sẵn trong cache thì load event không bắn nữa.
+      if (img.complete) {
+        done();
         return;
       }
-      const onLoad = () => img.classList.add('is-loaded');
-      img.addEventListener('load', onLoad, { once: true });
-      img.addEventListener('error', onLoad, { once: true });
+
+      img.addEventListener('load', done, { once: true });
+      // Ảnh lỗi cũng phải tắt skeleton: để nó quét mãi thì người xem tưởng mạng còn
+      // đang tải, thay vì thấy ngay là ô đó không có ảnh.
+      img.addEventListener('error', done, { once: true });
     });
+  }
+
+  /*
+    Tắt vệt sáng skeleton của những khung đã trôi xa khỏi màn hình — xem chú thích
+    [data-skeleton] trong global.css để biết vì sao đánh dấu theo chiều "tắt".
+
+    rootMargin 300px: tắt hẳn khi đã ra xa, chứ không tắt ngay ở mép màn hình. Khung vừa
+    trôi khỏi tầm mắt một chút mà đã dừng thì lúc cuộn ngược lại nó bật lên giữa chu kỳ,
+    thành một cú giật sáng.
+
+    Khung nằm trong <dialog> thì không theo dõi: lúc hộp thoại đóng nó là display:none nên
+    animation đã tự huỷ, mà đánh dấu thì nó bị coi là ngoài màn hình rồi tới lúc mở chưa
+    chắc kịp bỏ dấu — lớp xem ảnh sẽ mất skeleton đúng chỗ cần nhất.
+  */
+  function initSkeletonSweep() {
+    const frames = [...document.querySelectorAll<HTMLElement>('[data-skeleton]')].filter(
+      (el) => !el.closest('dialog'),
+    );
+    if (!frames.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const el = entry.target as HTMLElement;
+          if (entry.isIntersecting) delete el.dataset.offscreen;
+          else el.dataset.offscreen = '';
+        });
+      },
+      { rootMargin: '300px 0px' },
+    );
+
+    frames.forEach((el) => observer.observe(el));
+    cleanups.push(() => observer.disconnect());
   }
 
   async function initParallax() {
@@ -148,7 +201,8 @@
     teardown();
     initSmoothScroll();
     initReveal();
-    initImageFade();
+    initImageLoading();
+    initSkeletonSweep();
     void initParallax();
   }
 

@@ -1,0 +1,26 @@
+---
+import BandList from '@/components/home/BandList.astro';
+import { PROCESS } from '@/config/studio';
+---
+
+<!--
+  Tám bước dựng thành danh sách dọc, không phải lưới 4 × 2 như bản trước.
+
+  Lưới cho mỗi bước một ô hẹp bằng một phần tư màn hình, nên phần mô tả vắt 3–4 dòng vụn
+  và tám ô đọc thành một bảng phải quét mắt theo hai chiều. Danh sách dọc thì mỗi bước là
+  một dòng đọc từ trái sang phải, và giống hệt nhịp của hai band kia.
+
+  Chỉ hiện 3 bước đầu: đây là band dài nhất trang chủ (8 mục, gấp đôi hai band kia), mà
+  người mới vào chỉ cần biết studio làm việc theo quy trình — ai muốn đọc đủ thì bấm mở.
+
+  Nền paper (không deep) để xen kẽ với Giá trị ở trên và Vì sao chọn studio ở dưới.
+-->
+<BandList
+  id="quy-trinh"
+  label="Quy trình"
+  heading="Tám bước, từ buổi gặp đầu tới ngày bàn giao."
+  items={PROCESS}
+  collapseAfter={3}
+  moreLabel={`Xem đủ ${PROCESS.length} bước`}
+  lessLabel="Thu gọn"
+/>

@@ -4,6 +4,12 @@
 // AVIF ít giá trị nhất ở đây; chỉ hero giữ AVIF.
 import { Image, getImage } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import {
+  DEFAULT_GALLERY_LAYOUT,
+  GALLERY_KINDS,
+  GALLERY_LAYOUTS,
+  type GalleryLayout,
+} from '@/config/taxonomy';
 
 interface Props {
   gallery: CollectionEntry<'projects'>['data']['gallery'];
@@ -24,9 +30,43 @@ const { gallery, title } = Astro.props;
   Ảnh nào tác giả đánh dấu wide vẫn được ưu tiên: chiếm 2 cột, tỉ lệ 2:1 nên cao
   bằng ô vuông bên cạnh, hàng không bị lệch.
 */
-const TILE_SIZES = '(min-width: 1024px) 25vw, (min-width: 768px) 33.33vw, 50vw';
 const WIDE_SIZES = '(min-width: 1024px) 50vw, (min-width: 768px) 66.66vw, 100vw';
-const TILE_WIDTHS = [240, 360, 480, 720, 960];
+
+/*
+  Thêm bậc 1280 so với bản cũ (dừng ở 960) vì cách xem "một cột lớn": ô ở đó rộng đúng bề
+  rộng màn hình, mà bản 960px phóng lên 1440px thì nhoè rõ. Bậc này chỉ tốn thêm một lượt
+  encode webp cho mỗi ảnh — không thêm AVIF, vì AVIF đã bị bỏ khỏi gallery do đắt build.
+*/
+const TILE_WIDTHS = [240, 360, 480, 720, 960, 1280];
+
+/*
+  Ảnh wide chiếm 2 cột — nhưng chỉ ở lưới ô vuông.
+
+  Ở "giữ tỉ lệ gốc" thì lưới là multi-column, không có khái niệm span cột; ở "một cột lớn"
+  thì mọi ảnh đều rộng bằng nhau. Nên bề rộng thật của ảnh wide chỉ khác ở đúng một cách
+  xem, và `sizes` phải nói đúng điều đó cho từng cách.
+*/
+function sizesFor(layout: (typeof GALLERY_LAYOUTS)[number], wide: boolean): string {
+  return layout.slug === 'o-vuong' && wide ? WIDE_SIZES : layout.sizes;
+}
+
+/** data-sizes-<slug> cho từng cách xem, để JS gán lại img.sizes lúc người xem đổi cách. */
+function sizesAttrs(wide: boolean): Record<string, string> {
+  return Object.fromEntries(GALLERY_LAYOUTS.map((l) => [`data-sizes-${l.slug}`, sizesFor(l, wide)]));
+}
+
+const DEFAULT_LAYOUT = GALLERY_LAYOUTS.find((l) => l.slug === DEFAULT_GALLERY_LAYOUT)!;
+
+const LAYOUT_ICONS: Record<GalleryLayout, string> = {
+  // Bốn ô bằng nhau.
+  'o-vuong':
+    '<rect x="1.5" y="1.5" width="6" height="6"/><rect x="10.5" y="1.5" width="6" height="6"/><rect x="1.5" y="10.5" width="6" height="6"/><rect x="10.5" y="10.5" width="6" height="6"/>',
+  // Hai cột, ô cao thấp lệch nhau — đúng hình dáng của masonry.
+  'ti-le':
+    '<rect x="1.5" y="1.5" width="6" height="9"/><rect x="10.5" y="1.5" width="6" height="5"/><rect x="1.5" y="13" width="6" height="3.5"/><rect x="10.5" y="9" width="6" height="7.5"/>',
+  // Hai dải ngang xếp dọc.
+  'mot-cot': '<rect x="1.5" y="2" width="15" height="5.5"/><rect x="1.5" y="10.5" width="15" height="5.5"/>',
+};
 
 /*
   Bản phóng to cho lightbox. 1800px trùng với một bậc srcset cũ nên phần lớn ảnh
@@ -35,44 +75,201 @@ const TILE_WIDTHS = [240, 360, 480, 720, 960];
 const fullSizes = await Promise.all(
   gallery.map((item) => getImage({ src: item.src, width: 1800, format: 'webp', quality: 82 })),
 );
+
+/*
+  Chia ảnh theo tab, giữ nguyên số thứ tự gốc trong mảng gallery: số đó đi vào alt
+  ("ảnh 3") nên phải là vị trí trong cả bộ, không phải vị trí trong tab — đổi tab
+  không được làm cùng một ảnh mang hai tên khác nhau.
+*/
+const groups = GALLERY_KINDS.map((kind) => ({
+  ...kind,
+  items: gallery
+    .map((item, index) => ({ item, index, full: fullSizes[index]?.src }))
+    .filter(({ item }) => item.kind === kind.slug),
+}));
+
+/*
+  Tab mở sẵn là tab đầu tiên có ảnh, không cứng là '3d': dự án chỉ có ảnh chụp thực
+  tế mà vào trang lại thấy một khung rỗng thì đọc ra như trang lỗi.
+*/
+const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
 ---
 
 {
   gallery.length > 0 && (
     <>
-      <ul class="grid grid-cols-2 gap-px bg-line md:grid-cols-3 lg:grid-cols-4" data-reveal>
-        {gallery.map((item, i) => (
-          <li class:list={[item.wide && 'col-span-2']}>
-            {/*
-              Nút chứ không phải thẻ a: đây là hành động mở lớp xem ảnh ngay tại
-              trang, không phải điều hướng sang địa chỉ khác.
-            */}
-            <button
-              type="button"
-              data-lightbox-open
-              data-index={i}
-              data-full={fullSizes[i]?.src}
-              data-caption={item.caption ?? ''}
-              class:list={[
-                'group relative block w-full cursor-zoom-in overflow-hidden bg-paper-deep',
-                item.wide ? 'aspect-[2/1]' : 'aspect-square',
-              ]}
+      {/*
+        data-reveal đặt ở khối ngoài, KHÔNG đặt trên từng lưới ảnh: panel không hoạt
+        động mang thuộc tính hidden nên display:none, mà IntersectionObserver không bao
+        giờ bắn cho phần tử display:none — lưới trong đó sẽ mắc kẹt ở opacity 0 đúng
+        lúc người xem bấm sang tab.
+      */}
+      <div data-reveal>
+        {/*
+          Ba tab luôn hiện đủ, tab không có ảnh thì disabled: cấu trúc trang giống nhau
+          ở mọi dự án, và người xem biết ngay dự án này có bản render nhưng chưa có ảnh
+          chụp thực tế — thông tin đó tự nó đã nói lên trạng thái công trình.
+        */}
+        {/*
+          Hàng điều khiển gồm hai nhóm KHÁC loại nhau, nên phải là hai vùng ARIA riêng:
+          tablist chỉ được chứa tab, nhét mấy nút chọn cách xem vào trong đó là khai báo
+          sai với trình đọc màn hình. Bọc ngoài bằng một flex để chúng vẫn nằm cùng một
+          hàng, không ăn thêm chiều cao.
+        */}
+        {/*
+          items-stretch, không phải items-center: cả tab nhóm ảnh và nút cách xem đều đánh
+          dấu trạng thái đang chọn bằng gạch chân đặt trùng lên viền dưới của hàng (-mb-px).
+          Nếu để items-center thì hai nhóm cao khác nhau vài px, và hai đường gạch chân nằm
+          ở hai độ cao khác nhau — nhìn ra ngay là hai thứ chắp vào nhau.
+        */}
+        <div
+          class="flex flex-wrap items-stretch justify-between gap-x-8 border-b border-line px-5 md:px-10"
+        >
+          <div
+            class="flex flex-wrap items-stretch gap-x-8"
+            role="tablist"
+            aria-label={`Nhóm ảnh dự án ${title}`}
+          >
+            {groups.map((group) => {
+            const isActive = group.slug === activeSlug;
+            return (
+              // tabindex theo kiểu roving: Tab chỉ đưa tiêu điểm vào tab đang mở, đi
+              // giữa các tab là việc của mũi tên trái/phải — đúng thói quen tablist.
+              <button
+                type="button"
+                role="tab"
+                id={`gallery-tab-${group.slug}`}
+                aria-controls={`gallery-panel-${group.slug}`}
+                aria-selected={isActive ? 'true' : 'false'}
+                aria-label={`${group.label} — ${group.items.length} ảnh`}
+                tabindex={isActive ? 0 : -1}
+                disabled={group.items.length === 0}
+                data-gallery-tab={group.slug}
+                class="label -mb-px border-b border-transparent py-4 transition-colors duration-500 ease-[var(--ease-hover)] aria-selected:border-ink aria-selected:text-ink enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                {group.label}
+                {/* Mờ hơn nhãn: nhãn "Ảnh 3D" vốn đã kết thúc bằng chữ số, để số
+                    lượng cùng độ đậm thì đọc thành "ảnh 3d 3". */}
+                <span class="ml-1.5 tabular-nums opacity-55">{group.items.length}</span>
+              </button>
+            );
+          })}
+          </div>
+
+          {/*
+            Nút icon chứ không phải chữ: ba nhãn "Lưới ô vuông / Giữ tỉ lệ gốc / Một cột lớn"
+            cộng ba tab nhóm ảnh là không vừa một hàng ở 375px, mà xuống hai hàng thì hàng
+            điều khiển cao gần bằng một ô ảnh.
+
+            radiogroup chứ không phải tablist thứ hai: ba nút này chọn một trong ba, giống
+            radio, và hai tablist cạnh nhau làm trình đọc màn hình không nói rõ được người
+            dùng đang ở nhóm nào.
+          */}
+          {/*
+            Có nhãn chữ "Cách xem", không phải chỉ ba icon trơn.
+
+            Đo bản đầu: nhóm nút rộng 104px nằm ở x=1281 trên màn 1440 — sát mép phải, cạnh
+            nó không có gì, icon 18px nét 1.1px màu muted. Không ai tìm thấy một chức năng
+            được đặt như vậy. Nhãn chữ vừa gọi tên chức năng vừa cho khối này đủ khối lượng
+            thị giác để mắt bắt được khi quét hàng điều khiển.
+
+            Nhãn ẩn dưới sm: ở 375px thì ba tab cộng nhãn cộng ba icon là tràn sang hàng thứ
+            hai, mà hàng điều khiển hai dòng thì cao gần bằng một ô ảnh.
+          */}
+          <div class="flex items-stretch gap-3">
+            <span class="label self-center hidden sm:inline" aria-hidden="true">Cách xem</span>
+
+            <div class="flex items-stretch" role="radiogroup" aria-label="Cách xem lưới ảnh">
+              {GALLERY_LAYOUTS.map((layout) => {
+                const isActive = layout.slug === DEFAULT_GALLERY_LAYOUT;
+
+                /*
+                  Gạch chân khi đang chọn — cùng ngôn ngữ với tab nhóm ảnh bên cạnh, nên hai
+                  nhóm đọc ra là cùng một hàng điều khiển.
+
+                  min-h-11 chứ không chỉ dựa vào items-stretch: ở 375px hàng điều khiển xuống
+                  hai dòng, dòng dưới chỉ cao bằng icon nên nút co còn 44×19px — dưới ngưỡng
+                  vùng bấm 44px. Ở desktop stretch vẫn cho 50px như tab.
+                */
+                return (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive ? 'true' : 'false'}
+                    aria-label={layout.label}
+                    title={layout.label}
+                    tabindex={isActive ? 0 : -1}
+                    data-gallery-layout={layout.slug}
+                    class="grid w-11 min-h-11 place-items-center -mb-px border-b border-transparent text-muted transition-colors duration-500 ease-[var(--ease-hover)] hover:text-ink aria-checked:border-ink aria-checked:text-ink"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 18 18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.1"
+                      aria-hidden="true"
+                      set:html={LAYOUT_ICONS[layout.slug]}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/*
+          Khối bọc để đo và chuyển chiều cao khi đổi tab. Không có nó thì tab 8 ảnh sang
+          tab 2 ảnh là một cú tụt hơn 600px tức thời, phần mô tả và điều hướng phía dưới
+          nhảy giật lên giữa lúc mắt đang ở lưới ảnh.
+        */}
+        <div data-gallery-stack data-layout={DEFAULT_GALLERY_LAYOUT}>
+          {groups.map((group) => (
+            <ul
+              class="tile-grid"
+              role="tabpanel"
+              id={`gallery-panel-${group.slug}`}
+              aria-labelledby={`gallery-tab-${group.slug}`}
+              data-gallery-panel={group.slug}
+              hidden={group.slug !== activeSlug}
             >
-              <Image
-                src={item.src}
-                alt={item.caption ?? `${title} — ảnh ${i + 1}`}
-                quality={68}
-                widths={TILE_WIDTHS}
-                sizes={item.wide ? WIDE_SIZES : TILE_SIZES}
-                loading="lazy"
-                decoding="async"
-                data-img-fade
-                class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
-              />
-            </button>
-          </li>
-        ))}
-      </ul>
+              {group.items.map(({ item, index, full }) => (
+                <li data-wide={item.wide ? '' : undefined}>
+                  {/*
+                    Nút chứ không phải thẻ a: đây là hành động mở lớp xem ảnh ngay tại
+                    trang, không phải điều hướng sang địa chỉ khác.
+                  */}
+                  <button
+                    type="button"
+                    data-lightbox-open
+                    data-full={full}
+                    data-caption={item.caption ?? ''}
+                    data-skeleton
+                    class:list={[
+                      'tile group relative block w-full cursor-zoom-in overflow-hidden bg-paper-deep',
+                      item.wide ? 'aspect-[2/1]' : 'aspect-square',
+                    ]}
+                  >
+                    <Image
+                      src={item.src}
+                      alt={item.caption ?? `${title} — ảnh ${index + 1}`}
+                      quality={68}
+                      widths={TILE_WIDTHS}
+                      sizes={sizesFor(DEFAULT_LAYOUT, item.wide)}
+                      loading="lazy"
+                      decoding="async"
+                      data-img-fade
+                      {...sizesAttrs(item.wide)}
+                      class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
+                    />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ))}
+        </div>
+      </div>
 
       {/*
         <dialog> thay vì tự dựng overlay bằng div: showModal() có sẵn lớp phủ nền,
@@ -80,8 +277,16 @@ const fullSizes = await Promise.all(
         bấm — bốn thứ tự viết lại đều dễ sai.
       */}
       <dialog data-lightbox class="lightbox" aria-label={`Ảnh dự án ${title}`}>
-        <div class="lightbox-stage" data-lightbox-stage>
-          <img data-lightbox-image alt="" />
+        {/*
+          Skeleton ở đây đáng giá nhất cả trang: bản phóng to là ảnh 1800px tải mới
+          hoàn toàn, mà lúc gán src thì khung trống trơn — không có gì cho biết là
+          đang tải hay đã hỏng. Dùng lại đúng cơ chế [data-skeleton] của lưới, JS bên
+          dưới bật/tắt data-loaded theo từng lần đổi ảnh.
+        */}
+        <div class="lightbox-stage" data-lightbox-stage data-skeleton="dark">
+          {/* draggable=false: mặc định trình duyệt cho kéo ảnh ra ngoài như một tệp,
+              cú kéo đó chiếm luôn thao tác rê để di ảnh. */}
+          <img data-lightbox-image data-img-fade draggable="false" alt="" />
         </div>
 
         <p class="lightbox-caption label" data-lightbox-caption />
@@ -109,6 +314,131 @@ const fullSizes = await Promise.all(
   @media (hover: hover) {
     :global(.group:hover .tile-media) {
       will-change: transform, scale;
+    }
+  }
+
+  /*
+    Ba cách xem lưới, chọn bằng data-layout ở khối bọc.
+
+    Viết bằng CSS ở đây chứ không phải utility Tailwind trên thẻ ul: một DOM duy nhất phục
+    vụ cả ba cách, nên đổi cách xem không phải dựng lại lưới, không mất tab đang mở, và
+    không nhân ba số ảnh trong HTML. Nếu để grid-cols-* của Tailwind trên ul thì hai hệ
+    tranh nhau và phải đè bằng !important.
+  */
+
+  /* ── Lưới ô vuông (mặc định) ─────────────────────────────────────
+     Kẻ hairline bằng gap-px + nền line của thẻ cha: rẻ hơn border trên từng ô vì không
+     nhân đôi đường kẻ ở chỗ hai ô giáp nhau. */
+  [data-layout='o-vuong'] .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background-color: var(--color-line);
+  }
+
+  [data-layout='o-vuong'] .tile-grid > li[data-wide] {
+    grid-column: span 2;
+  }
+
+  @media (min-width: 768px) {
+    [data-layout='o-vuong'] .tile-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    [data-layout='o-vuong'] .tile-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* ── Giữ tỉ lệ gốc ───────────────────────────────────────────────
+     Dùng multi-column: đây là masonry duy nhất chạy được ở mọi trình duyệt hôm nay
+     (grid-template-rows: masonry của CSS Grid vẫn sau cờ thử nghiệm ở Chrome).
+
+     Đánh đổi đã biết: thứ tự đọc chạy hết cột này mới sang cột kia, không phải trái sang
+     phải theo hàng. Với một bộ ảnh công trình thì thứ tự không mang nghĩa nên chấp nhận
+     được; nếu sau này gallery cần đúng thứ tự thì phải đổi sang JS đo cột.
+
+     Không kẻ hairline ở đây: mẹo gap-px + nền cha không áp dụng cho multi-column, mà kẻ
+     border từng ô thì mép dưới các cột lệch nhau nên đường kẻ hoá ra vụn. */
+  [data-layout='ti-le'] .tile-grid {
+    columns: 2;
+    column-gap: 1px;
+  }
+
+  [data-layout='ti-le'] .tile-grid > li {
+    /* Chặn trình duyệt cắt một ô làm hai nửa ở hai cột. */
+    break-inside: avoid;
+    margin-bottom: 1px;
+  }
+
+  @media (min-width: 768px) {
+    [data-layout='ti-le'] .tile-grid {
+      columns: 3;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    [data-layout='ti-le'] .tile-grid {
+      columns: 4;
+    }
+  }
+
+  /* ── Một cột lớn ─────────────────────────────────────────────── */
+  [data-layout='mot-cot'] .tile-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  /*
+    Hai cách xem giữ tỉ lệ: bỏ khung cố định để ảnh cao theo đúng tỉ lệ gốc của nó.
+
+    Độ đặc hiệu (0,2,0) nên thắng aspect-square / h-full của Tailwind (0,1,0) mà không cần
+    !important. Chiều cao vẫn biết trước lúc chưa tải xong vì thẻ img có width/height thật
+    do Astro sinh ra — nên không có CLS, và skeleton vẫn có khung để quét.
+  */
+  [data-layout='ti-le'] .tile,
+  [data-layout='mot-cot'] .tile {
+    aspect-ratio: auto;
+  }
+
+  [data-layout='ti-le'] .tile-media,
+  [data-layout='mot-cot'] .tile-media {
+    height: auto;
+  }
+
+  /*
+    Đổi tab = chuyển chiều cao khối lưới + ảnh mới mờ vào.
+
+    transition chỉ bật trong lúc đang chuyển (data-animating), không để thường trực:
+    chiều cao khối này còn đổi vì lý do khác — xoay ngang máy, đổi số cột theo
+    breakpoint — mà những lần đó thì bò chiều cao 0.42s là sai, phải đổi ngay.
+
+    overflow: hidden để lưới mới không thò ra ngoài khi khối còn đang thấp hơn nó.
+  */
+  [data-gallery-stack][data-animating] {
+    overflow: hidden;
+    transition: height 0.42s var(--ease-out-expo);
+  }
+
+  /*
+    Lưới mới mờ vào bằng animation, KHÔNG bằng transition opacity.
+
+    Đã thử transition và đo: panel vừa bỏ hidden thì chưa có "trạng thái trước" để nội
+    suy, mà đặt opacity 0 rồi trả lại ngay trong cùng một tác vụ thì trình duyệt coi là
+    phép chuyển bị đảo về đúng giá trị cũ và huỷ luôn — getAnimations() không trả về
+    transition nào cả, lưới hiện thẳng không mờ. Animation thì chạy được ngay trên phần
+    tử vừa được hiện.
+  */
+  [data-gallery-panel][data-entering] {
+    animation: gallery-panel-in 0.42s var(--ease-out-expo);
+  }
+
+  @keyframes gallery-panel-in {
+    from {
+      opacity: 0;
     }
   }
 
@@ -148,6 +478,13 @@ const fullSizes = await Promise.all(
     cursor: zoom-in;
   }
 
+  /* Rút ngắn so với 0.9s mặc định của [data-img-fade]: ở đây fade chạy mỗi lần bấm
+     next, gần một giây thì thao tác đọc ra là chậm chứ không phải mềm. Nhắm vào
+     animation-duration vì fade của ảnh là animation, không phải transition. */
+  .lightbox-stage img.is-loaded {
+    animation-duration: 0.4s;
+  }
+
   /*
     Phóng to = bỏ mọi giới hạn kích thước để ảnh về đúng cỡ đã tải (1800px), khung
     thành vùng cuộn. Không dùng transform: scale vì ảnh phóng bằng transform vẫn
@@ -159,7 +496,23 @@ const fullSizes = await Promise.all(
     max-height: none;
     width: auto;
     height: auto;
-    cursor: zoom-out;
+  }
+
+  /*
+    Con trỏ bàn tay khi đã phóng to: ảnh 1800px luôn tràn khung nên việc chính lúc này
+    là rê để xem chỗ khác, không phải bấm. Bấm mà không rê thì vẫn thu nhỏ lại.
+  */
+  .lightbox-stage[data-zoomed],
+  .lightbox-stage[data-zoomed] img {
+    cursor: grab;
+  }
+
+  .lightbox-stage[data-panning],
+  .lightbox-stage[data-panning] img {
+    cursor: grabbing;
+    /* Rê qua phần chú thích ảnh mà không có dòng này thì con trỏ quét thành vệt chọn
+       chữ, ảnh thì đứng yên. */
+    user-select: none;
   }
 
   .lightbox-caption {
@@ -220,12 +573,225 @@ const fullSizes = await Promise.all(
     return document.querySelector<HTMLElement>('[data-lightbox-stage]');
   }
 
+  /*
+    Chỉ lấy ảnh của tab đang mở, không lấy cả trang.
+
+    Nếu quét toàn trang thì bấm mũi tên trong lớp xem ảnh sẽ đi xuyên sang ảnh của tab
+    khác — người xem đang xem "Thực tế" tự nhiên nhảy sang bản render mà không hiểu vì
+    sao. Panel bị ẩn mang thuộc tính hidden nên :not([hidden]) chọn đúng tab đang mở.
+  */
   function triggers() {
-    return [...document.querySelectorAll<HTMLButtonElement>('[data-lightbox-open]')];
+    const panel = document.querySelector<HTMLElement>('[data-gallery-panel]:not([hidden])');
+    return [...(panel ?? document).querySelectorAll<HTMLButtonElement>('[data-lightbox-open]')];
   }
 
   let current = -1;
   let isOpen = false;
+
+  function tabs() {
+    return [...document.querySelectorAll<HTMLButtonElement>('[data-gallery-tab]')];
+  }
+
+  const SWAP_MS = 420;
+  let settleTimer = 0;
+
+  function reduced() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /*
+    Đổi tab = đổi aria-selected + hidden, không dùng class riêng: aria-selected vừa là
+    trạng thái cho trình đọc màn hình vừa là thứ CSS bám vào để kẻ gạch chân, nên không
+    có cách nào để hai thứ lệch nhau.
+
+    Phần còn lại của hàm chỉ để cú đổi không giật: đo chiều cao cũ trước khi đổi, khoá
+    khối lưới ở mức đó, rồi cho nó chạy tới chiều cao mới trong lúc lưới mới mờ vào.
+    Không khoá thì height nhảy thẳng từ auto sang auto — trình duyệt không có gì để nội
+    suy, cả phần trang phía dưới giật một nhịp.
+  */
+  function selectTab(slug: string) {
+    const list = tabs();
+    const target = list.find((tab) => tab.dataset.galleryTab === slug);
+    if (!target || target.disabled) return;
+
+    const stack = document.querySelector<HTMLElement>('[data-gallery-stack]');
+    const panels = [...document.querySelectorAll<HTMLElement>('[data-gallery-panel]')];
+    const next = panels.find((panel) => panel.dataset.galleryPanel === slug);
+    if (!stack || !next || !next.hidden) return;
+
+    list.forEach((tab) => {
+      const isActive = tab.dataset.galleryTab === slug;
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      tab.tabIndex = isActive ? 0 : -1;
+    });
+
+    const from = stack.offsetHeight;
+    panels.forEach((panel) => {
+      panel.hidden = panel !== next;
+      delete panel.dataset.entering;
+    });
+
+    if (reduced()) return;
+
+    const to = stack.offsetHeight;
+
+    stack.dataset.animating = '';
+    stack.style.height = `${from}px`;
+
+    /*
+      Đọc offsetHeight để buộc trình duyệt chốt layout ở chiều cao cũ trước khi gán
+      chiều cao mới. Bỏ dòng này thì hai lần gán nằm cùng một frame, trình duyệt chỉ
+      thấy giá trị cuối và transition không chạy.
+    */
+    void stack.offsetHeight;
+
+    stack.style.height = `${to}px`;
+    next.dataset.entering = '';
+
+    // Trả height về auto sau khi chuyển xong: khoá cứng px thì ảnh lazy vừa tải xong
+    // hay lần đổi breakpoint sau đó sẽ bị cắt.
+    window.clearTimeout(settleTimer);
+    settleTimer = window.setTimeout(() => {
+      stack.style.height = '';
+      delete stack.dataset.animating;
+      delete next.dataset.entering;
+    }, SWAP_MS);
+  }
+
+  /*
+    ─── Cách xem lưới ảnh ───────────────────────────────────────────────────────────
+
+    Khoá localStorage khai ở đây, không ở frontmatter: chỉ đoạn script này đọc/ghi nó, để
+    thêm một hằng số phía server chỉ tạo ra hai chỗ phải khớp nhau.
+  */
+  const LAYOUT_KEY = 'nnd:gallery-layout';
+
+  let layoutTimer = 0;
+
+  function layoutButtons() {
+    return [...document.querySelectorAll<HTMLButtonElement>('[data-gallery-layout]')];
+  }
+
+  /*
+    Đổi cách xem lưới.
+
+    `persist` tách riêng vì hàm này chạy trong hai tình huống khác nhau: người bấm (phải
+    ghi nhớ) và lúc dựng lại trạng thái đã lưu (không được ghi lại, và không nên chạy
+    chuyển động cho một thứ chưa từng hiện ra).
+  */
+  function applyLayout(slug: string, options: { persist: boolean; animate: boolean }) {
+    const stack = document.querySelector<HTMLElement>('[data-gallery-stack]');
+    const buttons = layoutButtons();
+    const target = buttons.find((button) => button.dataset.galleryLayout === slug);
+
+    // Slug lạ — localStorage còn giá trị của bản cũ, hoặc người dùng tự sửa. Giữ mặc định
+    // thay vì gắn một data-layout không có CSS nào khớp, thứ sẽ ra lưới không định dạng.
+    if (!stack || !target || stack.dataset.layout === slug) return;
+
+    if (options.persist) {
+      try {
+        localStorage.setItem(LAYOUT_KEY, slug);
+      } catch {
+        // Safari ở chế độ riêng tư ném lỗi khi ghi. Mất phần ghi nhớ, không mất tính năng.
+      }
+    }
+
+    buttons.forEach((button) => {
+      const isActive = button === target;
+      button.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      button.tabIndex = isActive ? 0 : -1;
+    });
+
+    const panel = document.querySelector<HTMLElement>('[data-gallery-panel]:not([hidden])');
+
+    /*
+      Gán lại sizes cho từng ảnh theo cách xem mới.
+
+      Bắt buộc, không phải tối ưu thêm: srcset cố định nhưng bề rộng thật của ô đổi từ 25vw
+      sang 100vw, mà trình duyệt chỉ chọn lại candidate khi thuộc tính sizes thay đổi. Không
+      gán thì sang "một cột lớn" là phóng bản 480px lên cả bề rộng màn hình.
+    */
+    const resize = () => {
+      stack.dataset.layout = slug;
+      stack.querySelectorAll<HTMLImageElement>(`img[data-sizes-${slug}]`).forEach((img) => {
+        const next = img.getAttribute(`data-sizes-${slug}`);
+        if (next && img.sizes !== next) img.sizes = next;
+      });
+    };
+
+    if (!options.animate || reduced()) {
+      resize();
+      return;
+    }
+
+    // Cùng kỹ thuật chuyển chiều cao như đổi tab: đo mốc cũ, khoá, đo mốc mới, chạy giữa
+    // hai mốc. Đổi cách xem là cú đổi chiều cao lớn nhất của trang này — ô vuông sang một
+    // cột lớn ở màn 1440 là hơn 3000px — nên không chuyển thì cả trang giật một cái.
+    const from = stack.offsetHeight;
+    resize();
+    const to = stack.offsetHeight;
+
+    if (from === to) return;
+
+    stack.dataset.animating = '';
+    stack.style.height = `${from}px`;
+    void stack.offsetHeight;
+    stack.style.height = `${to}px`;
+    if (panel) panel.dataset.entering = '';
+
+    window.clearTimeout(layoutTimer);
+    layoutTimer = window.setTimeout(() => {
+      stack.style.height = '';
+      delete stack.dataset.animating;
+      if (panel) delete panel.dataset.entering;
+    }, SWAP_MS);
+  }
+
+  /** Mũi tên đi giữa ba nút chọn cách xem, vòng lại hai đầu — hành vi radiogroup chuẩn. */
+  function stepLayout(from: HTMLButtonElement, direction: number) {
+    const buttons = layoutButtons();
+    if (buttons.length < 2) return;
+
+    const at = buttons.indexOf(from);
+    const next = buttons[(at + direction + buttons.length) % buttons.length];
+
+    applyLayout(next.dataset.galleryLayout ?? '', { persist: true, animate: true });
+    next.focus();
+  }
+
+  /*
+    Dựng lại cách xem đã lưu.
+
+    Chạy ngay lúc script thực thi (script module là defer, DOM đã parse xong) và chạy lại ở
+    astro:after-swap — mốc đó xảy ra trước lượt paint của trang mới, nên điều hướng sang dự
+    án khác không thấy lưới ô vuông hiện ra rồi mới nhảy sang cách xem đã chọn.
+
+    animate: false vì đây là trạng thái ban đầu, không phải một cú đổi do người dùng gây ra.
+  */
+  function restoreLayout() {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(LAYOUT_KEY);
+    } catch {
+      // Đọc cũng có thể ném lỗi như ghi. Không có gì để dựng lại thì thôi.
+    }
+    if (saved) applyLayout(saved, { persist: false, animate: false });
+  }
+
+  /*
+    Mũi tên trái/phải đi giữa các tab, bỏ qua tab rỗng (disabled) và vòng lại hai đầu.
+    Đây là hành vi bàn phím chuẩn của tablist; thiếu nó thì tab chỉ dùng được bằng chuột.
+  */
+  function stepTab(from: HTMLButtonElement, direction: number) {
+    const usable = tabs().filter((tab) => !tab.disabled);
+    if (usable.length < 2) return;
+
+    const at = usable.indexOf(from);
+    const next = usable[(at + direction + usable.length) % usable.length];
+
+    selectTab(next.dataset.galleryTab ?? '');
+    next.focus();
+  }
 
   function show(index: number) {
     const items = triggers();
@@ -237,14 +803,37 @@ const fullSizes = await Promise.all(
     const trigger = items[current];
     const image = document.querySelector<HTMLImageElement>('[data-lightbox-image]');
     const caption = document.querySelector<HTMLElement>('[data-lightbox-caption]');
-    const inner = document.querySelector<HTMLImageElement>(`[data-index="${current}"] img`);
+    // Lấy alt từ chính ô vừa bấm: alt đánh số theo cả bộ ảnh nên không suy ra được từ
+    // vị trí trong tab.
+    const inner = trigger?.querySelector('img');
     if (!trigger || !image) return;
+
+    const el = stage();
+    el?.removeAttribute('data-zoomed');
+
+    // Về lại trạng thái chờ trước khi đổi src, nếu không ảnh cũ còn đứng đó trong lúc
+    // ảnh mới tải và người xem tưởng nút next không ăn.
+    el?.removeAttribute('data-loaded');
+    image.classList.remove('is-loaded');
+
+    /*
+      Gán onload/onerror chứ không addEventListener: bấm next liên tiếp thì lần gán
+      sau ghi đè lần trước, không để lại handler mồ côi của ảnh đã bị bỏ dở — handler
+      đó bắn muộn sẽ tắt skeleton của ảnh đang tải.
+    */
+    const done = () => {
+      el?.setAttribute('data-loaded', '');
+      image.classList.add('is-loaded');
+    };
+    image.onload = done;
+    image.onerror = done;
 
     image.src = trigger.dataset.full ?? '';
     image.alt = inner?.alt ?? '';
     if (caption) caption.textContent = trigger.dataset.caption || '';
 
-    stage()?.removeAttribute('data-zoomed');
+    // Ảnh đã có trong cache: gán lại đúng src đang hiển thị thì load không bắn nữa.
+    if (image.complete) done();
   }
 
   function open(index: number) {
@@ -293,13 +882,118 @@ const fullSizes = await Promise.all(
     el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
   }
 
+  /*
+    Rê chuột để di ảnh đã phóng to.
+
+    Khung ảnh vốn là vùng cuộn (overflow: auto) nên bánh xe chuột và cuộn hai ngón đã
+    di được rồi; thiếu là cách tự nhiên nhất với chuột — bấm giữ rồi kéo. Di bằng
+    scrollLeft/scrollTop chứ không bằng transform: giữ đúng một cơ chế vị trí với bánh
+    xe chuột, không phải cộng trừ hai hệ toạ độ.
+
+    Chỉ nhận chuột: trên cảm ứng, một ngón kéo đã là cuộn sẵn của trình duyệt, chen vào
+    chỉ làm nó nặng và mất đà quán tính.
+  */
+  let panId = -1;
+  let panX = 0;
+  let panY = 0;
+  let panFromX = 0;
+  let panFromY = 0;
+  let panMoved = false;
+
+  document.addEventListener('pointerdown', (event) => {
+    // Xoá cờ ngay đầu mỗi lần chạm: nếu lần rê trước kết thúc ngoài khung thì không có
+    // click nào theo sau để xoá, cờ sót lại sẽ ăn oan cú bấm kế tiếp.
+    panMoved = false;
+
+    if (!isOpen || event.pointerType !== 'mouse' || event.button !== 0) return;
+
+    const el = stage();
+    if (!el?.hasAttribute('data-zoomed')) return;
+    if (!(event.target instanceof Element) || !event.target.closest('[data-lightbox-stage]')) {
+      return;
+    }
+
+    panId = event.pointerId;
+    panX = event.clientX;
+    panY = event.clientY;
+    panFromX = event.clientX;
+    panFromY = event.clientY;
+    el.setAttribute('data-panning', '');
+
+    // Giữ pointer về khung: rê nhanh ra ngoài mép màn hình vẫn còn nhận pointermove nên
+    // ảnh không dừng giữa đường. Không bắt được thì rê vẫn chạy, chỉ mất nhịp khi ra
+    // khỏi cửa sổ — không đáng để một lỗi ở đây chặn cả thao tác.
+    try {
+      el.setPointerCapture(panId);
+    } catch {
+      // pointer đã nhả trước khi kịp bắt
+    }
+  });
+
+  document.addEventListener('pointermove', (event) => {
+    if (event.pointerId !== panId) return;
+
+    const el = stage();
+    if (!el) return;
+
+    // Kéo sang phải = xem phần bên trái ảnh, nên trừ đi.
+    el.scrollLeft -= event.clientX - panX;
+    el.scrollTop -= event.clientY - panY;
+    panX = event.clientX;
+    panY = event.clientY;
+
+    /*
+      Đo tổng quãng đường từ điểm bấm, không đo từng bước một: rê chậm thì mỗi
+      pointermove chỉ nhích 1–2px, so ngưỡng theo từng bước sẽ không bao giờ vượt và cú
+      click sau đó vẫn thu nhỏ ảnh giữa lúc người xem đang rê.
+
+      Ngưỡng 4px để tay hơi rung lúc bấm vẫn tính là bấm.
+    */
+    if (
+      !panMoved &&
+      (Math.abs(event.clientX - panFromX) > 4 || Math.abs(event.clientY - panFromY) > 4)
+    ) {
+      panMoved = true;
+    }
+  });
+
+  function endPan(event: PointerEvent) {
+    if (event.pointerId !== panId) return;
+
+    stage()?.removeAttribute('data-panning');
+    panId = -1;
+  }
+
+  document.addEventListener('pointerup', endPan);
+  document.addEventListener('pointercancel', endPan);
+
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const trigger = target.closest<HTMLElement>('[data-lightbox-open]');
+    // Vừa rê ảnh xong: cú click sinh ra sau đó không phải ý muốn thu nhỏ hay đóng.
+    if (panMoved) {
+      panMoved = false;
+      return;
+    }
+
+    const tab = target.closest<HTMLButtonElement>('[data-gallery-tab]');
+    if (tab) {
+      selectTab(tab.dataset.galleryTab ?? '');
+      return;
+    }
+
+    const layoutButton = target.closest<HTMLButtonElement>('[data-gallery-layout]');
+    if (layoutButton) {
+      applyLayout(layoutButton.dataset.galleryLayout ?? '', { persist: true, animate: true });
+      return;
+    }
+
+    const trigger = target.closest<HTMLButtonElement>('[data-lightbox-open]');
     if (trigger) {
-      open(Number(trigger.dataset.index ?? 0));
+      // Vị trí trong danh sách ảnh của tab đang mở — không đọc từ data-index nữa, vì
+      // số thứ tự gốc của ảnh không còn khớp với vị trí trong tab.
+      open(triggers().indexOf(trigger));
       return;
     }
 
@@ -324,7 +1018,43 @@ const fullSizes = await Promise.all(
   });
 
   document.addEventListener('keydown', (event) => {
-    if (!isOpen) return;
+    // Bàn phím cho thanh tab chỉ xử lý khi lớp xem ảnh đang đóng: lúc lớp ảnh mở thì
+    // mũi tên thuộc về việc lật ảnh.
+    if (!isOpen) {
+      const target = event.target instanceof Element ? event.target : null;
+
+      // Mũi tên trong nhóm chọn cách xem: radiogroup cũng đi bằng mũi tên như tablist,
+      // và bấm tới đâu là chọn tới đó — đúng hành vi radio chuẩn.
+      const layoutButton = target?.closest<HTMLButtonElement>('[data-gallery-layout]');
+      if (layoutButton) {
+        const direction =
+          event.key === 'ArrowRight' || event.key === 'ArrowDown'
+            ? 1
+            : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+              ? -1
+              : 0;
+        if (!direction) return;
+
+        event.preventDefault();
+        stepLayout(layoutButton, direction);
+        return;
+      }
+
+      const tab = target?.closest<HTMLButtonElement>('[data-gallery-tab]');
+      if (!tab) return;
+
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        stepTab(tab, 1);
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        stepTab(tab, -1);
+      }
+
+      return;
+    }
 
     if (event.key === 'ArrowRight') show(current + 1);
     if (event.key === 'ArrowLeft') show(current - 1);
@@ -339,4 +1069,7 @@ const fullSizes = await Promise.all(
   document.addEventListener('astro:before-swap', () => {
     if (isOpen) close();
   });
+
+  document.addEventListener('astro:after-swap', restoreLayout);
+  restoreLayout();
 </script>

@@ -6,14 +6,7 @@ import Press from '@/components/layout/Press.astro';
 import studioImage from '@/assets/studio.jpg';
 import { site } from '@/config/site';
 import { PROJECT_TYPES, SERVICES } from '@/config/taxonomy';
-
-// Quy trình: tên giai đoạn và thứ tự là đủ. Chi tiết để dành cho buổi gặp.
-const process = [
-  { step: '01', title: 'Khảo sát hiện trạng' },
-  { step: '02', title: 'Phương án ý tưởng' },
-  { step: '03', title: 'Hồ sơ kỹ thuật' },
-  { step: '04', title: 'Giám sát thi công' },
-];
+import { PROCESS_BY_PHASE } from '@/config/studio';
 
 // Tên lấy từ phần ghi công trong hai bài VnExpress về công trình của studio —
 // không phải suy đoán. Vai trò cụ thể thì cần studio xác nhận.
@@ -36,7 +29,10 @@ const team = [
     </p>
   </section>
 
-  <figure class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]">
+  <figure
+    data-skeleton
+    class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]"
+  >
     <div class="absolute inset-x-0 -top-[8%] h-[116%]">
       <Picture
         src={studioImage}
@@ -71,18 +67,29 @@ const team = [
       </ul>
     </div>
 
+    <!--
+      Bốn giai đoạn tổng, dẫn xuống bản 8 bước ở trang chủ.
+
+      Cả hai cùng đọc từ PROCESS trong config/studio.ts nên không thể lệch nhau: ở đây
+      là bản đồ tổng cho người đang tìm hiểu studio, trang chủ là bản chi tiết cho người
+      đang cân nhắc thuê. Dải số ("01–02") cho biết mỗi giai đoạn gồm mấy bước.
+    -->
     <div class="bg-paper px-5 py-14 md:px-10 md:py-20">
       <p class="label">Quy trình</p>
       <ol class="mt-6 space-y-3">
         {
-          process.map((item) => (
+          PROCESS_BY_PHASE.map((phase) => (
             <li class="flex gap-5">
-              <span class="label pt-1.5">{item.step}</span>
-              <span class="text-lead font-light">{item.title}</span>
+              <span class="label pt-1.5 tabular-nums">{phase.range}</span>
+              <span class="text-lead font-light">{phase.label}</span>
             </li>
           ))
         }
       </ol>
+
+      <a href="/#quy-trinh" class="link-underline mt-8 inline-block text-sm">
+        Chi tiết 8 bước
+      </a>
     </div>
   </section>
 

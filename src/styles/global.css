@@ -131,14 +131,113 @@
     transform: none;
   }
 
-  /* Ảnh nặng: fade-in khi decode xong, tránh nháy trắng. */
+  /*
+    Ảnh nặng: fade-in khi decode xong, tránh nháy trắng.
+
+    Fade bằng animation, KHÔNG bằng transition — và đây là điều kiện bắt buộc, không
+    phải lựa chọn thẩm mỹ.
+
+    Bản cũ viết `transition: opacity 0.9s`. Shorthand đó reset luôn transition-property
+    về `opacity`, mà nó cùng độ đặc hiệu (0,1,0) với utility .transition-transform của
+    Tailwind lại khai sau trong cùng @layer utilities nên thắng. Kết quả đo được: ô lưới
+    nào có data-img-fade thì transition-property ra `opacity | 0.9s` thay vì
+    `transform, translate, scale, rotate | 0.7s` — tức là hover mất sạch transition, cú
+    phóng 1.04 nhảy tức thời. Toàn bộ ô gallery và 5 ô lazy cuối lưới trang chủ đều bị.
+
+    Animation không đụng tới transition-property nên hai hiệu ứng ở chung một thẻ img mà
+    không giành nhau nữa: fade là animation, hover là transition.
+  */
   [data-img-fade] {
     opacity: 0;
-    transition: opacity 0.9s var(--ease-out-expo);
   }
 
   [data-img-fade].is-loaded {
     opacity: 1;
+    animation: img-fade-in 0.9s var(--ease-out-expo);
+  }
+
+  /*
+    Skeleton cho khung ảnh: vệt sáng chạy ngang trên nền khung, tắt hẳn khi ảnh bên
+    trong đã load (Motion.astro gắn data-loaded).
+
+    Vẽ bằng background của CHÍNH khung, không thêm pseudo-element phủ lên: khung ảnh
+    nào cũng đã có nền paper-deep và overflow-hidden, mà background luôn paint dưới
+    ảnh lẫn dưới các lớp phủ — nên không phải xếp z-index với overlay tên dự án của
+    WorkWall hay khối tiêu đề của hero, và vệt sáng không bao giờ quét lên chữ.
+
+    Vị trí nghỉ đặt ở 200% (vệt nằm ngoài khung, phía trái) chứ không phải 0: khi
+    animation bị tắt — reduced-motion, hoặc lúc gắn data-loaded — background trả về
+    đúng giá trị này, nên không có vệt sáng nào đứng chết giữa khung.
+  */
+  [data-skeleton] {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in oklab, white 70%, var(--color-paper)) 48%,
+      transparent 66%
+    );
+    background-repeat: no-repeat;
+    background-size: 200% 100%;
+    background-position: 200% 0;
+  }
+
+  /*
+    Quét khi ảnh chưa về, TRỪ khi khung đã trôi xa khỏi màn hình.
+
+    Đo được ở trang chủ: để animation trên mọi [data-skeleton] thì 5 ô lazy dưới màn hình
+    quét mãi không dừng — ảnh của chúng còn chưa được yêu cầu tải nên vệt sáng vừa sai
+    (không có gì đang tải) vừa tốn: background-position chạy trên main thread, mỗi frame
+    một lần tính lại style cho tới khi người xem chịu cuộn xuống.
+
+    Điều kiện viết theo chiều "trừ ra" chứ không phải "chỉ khi thấy": cả hai chiều đều cần
+    IntersectionObserver của Motion.astro, nhưng chọn chiều này thì khi observer không
+    chạy (tab nền, JS lỗi) skeleton vẫn hiện — mất phần tiết kiệm, không mất tính năng.
+    Chiều kia hỏng là skeleton biến mất hẳn.
+
+    Panel tab bị ẩn hay lớp xem ảnh lúc đóng đều là display:none, trình duyệt tự huỷ
+    animation nên không cần đánh dấu gì thêm.
+  */
+  [data-skeleton]:not([data-loaded]):not([data-offscreen]) {
+    animation: skeleton-sweep 1.5s var(--ease-hover) infinite;
+  }
+
+  /*
+    Bản nền tối cho khung ảnh có chữ trắng phủ lên (hero trang chủ, hero trang dự án,
+    lớp xem ảnh). Nền paper-deep ở những khung này làm chữ trắng gần như biến mất
+    trong lúc chờ ảnh, vì lớp gradient tối phủ sẵn không đủ dìm một nền sáng.
+  */
+  [data-skeleton='dark'] {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in oklab, var(--color-paper) 14%, var(--color-ink)) 48%,
+      transparent 66%
+    );
+  }
+
+  /*
+    Tắt bằng background-image: none thay vì hạ opacity: ảnh phía trên đang fade vào
+    (0.9s) nên nó che dần phần nền, còn vệt sáng thì biên độ sáng rất nhỏ — paper
+    pha trắng trên paper-deep — nên mất đi cũng không thành cú nháy.
+  */
+  [data-skeleton][data-loaded] {
+    background-image: none;
+  }
+}
+
+@keyframes img-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -100% 0;
   }
 }
 
@@ -159,5 +258,11 @@
 
   [data-img-fade] {
     opacity: 1 !important;
+  }
+
+  /* Tắt cả vệt sáng, không chỉ rút ngắn: nền phẳng paper-deep là đủ để hiểu ô đang
+     chờ ảnh. */
+  [data-skeleton] {
+    background-image: none !important;
   }
 }

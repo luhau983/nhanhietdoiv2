@@ -1,0 +1,63 @@
+---
+import BandList from '@/components/home/BandList.astro';
+import { site } from '@/config/site';
+import { WHY_US } from '@/config/studio';
+
+interface Props {
+  /** Số dự án đang công bố. Truyền từ trang để chỉ đếm content collection một lần. */
+  projectCount: number;
+}
+
+const { projectCount } = Astro.props;
+
+/*
+  Hai con số, cả hai đều kiểm chứng được tại thời điểm build.
+
+  Bản prototype ghi "09 năm — 88 dự án — 69 khách hàng"; ba số đó không có nguồn nào
+  trong repo này xác nhận. Trên site của một studio, con số sai là thứ khách hỏi lại
+  ngay ở buổi gặp đầu, nên chỉ giữ số nào lấy được từ dữ liệu thật: năm hoạt động suy
+  từ site.foundedYear, số dự án đếm từ content collection.
+
+  Tính lúc build nên số năm chỉ đúng lại sau mỗi lần deploy — chấp nhận được với một
+  site tĩnh vốn build lại mỗi khi thêm dự án.
+*/
+const years = new Date().getFullYear() - site.foundedYear;
+
+const stats = [
+  { n: String(years), label: 'Năm hoạt động' },
+  { n: String(projectCount), label: 'Dự án đã công bố' },
+];
+---
+
+<!--
+  Không có ảnh trong band này — cố ý.
+
+  Bản đầu có một ảnh dọc ở cột trái. Ảnh khung 4:5 mà cột trái rộng 873px ở màn 1920 thì
+  cao gần 1200px, trong khi bốn lý do bên phải chỉ chiếm 570px: hơn nửa cột phải là khoảng
+  trống. Mà cả trang chủ phía trên đã là lưới ảnh công trình — chỗ này là chỗ duy nhất
+  studio nói bằng chữ, thêm một ảnh nữa không nói thêm điều gì.
+-->
+<BandList
+  label="Vì sao chọn studio"
+  heading="Làm nhà cho khí hậu nơi mình đang sống."
+  items={WHY_US}
+  tone="deep"
+>
+  <!--
+    Số liệu ngay dưới tiêu đề: hai con số là phần chứng minh cho câu tiêu đề nên phải đọc
+    liền mạch với nó.
+
+    Cỡ chữ text-title, bằng h2 chứ không phải text-display: số to hơn tiêu đề thì band này
+    đọc ra như một trang thống kê, mà thứ cần nhớ ở đây là câu tiêu đề.
+  -->
+  <dl slot="aside" class="mt-8 flex gap-12 border-t border-line pt-6">
+    {
+      stats.map((stat) => (
+        <div>
+          <dd class="text-title leading-none font-light tracking-tight tabular-nums">{stat.n}</dd>
+          <dt class="label mt-2.5">{stat.label}</dt>
+        </div>
+      ))
+    }
+  </dl>
+</BandList>

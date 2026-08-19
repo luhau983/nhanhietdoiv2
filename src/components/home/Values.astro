@@ -1,0 +1,17 @@
+---
+import BandList from '@/components/home/BandList.astro';
+import { VALUES } from '@/config/studio';
+---
+
+<!--
+  Câu "Ánh sáng, thông gió, vật liệu địa phương" trước đây đứng riêng thành một section
+  cuối trang, ngay dưới Báo chí. Gộp vào đây làm tiêu đề: hai khối chữ cùng nói về cách
+  làm việc mà đặt cách nhau một màn hình thì đọc ra như trang bị lặp, còn ghép lại thì
+  thành một mạch — tuyên bố rồi diễn giải bằng ba giá trị.
+-->
+<BandList
+  label="Giá trị"
+  heading="Ánh sáng, thông gió, vật liệu địa phương."
+  items={VALUES}
+  tone="deep"
+/>

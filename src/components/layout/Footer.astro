@@ -1,41 +1,72 @@
 ---
 import { site } from '@/config/site';
 
+interface Props {
+  /**
+   * Khối liên hệ (email, điện thoại, mạng xã hội).
+   *
+   * Tắt ở trang nào đã tự có lời mời liên hệ ngay trên chân trang: trang chủ kết bằng
+   * band CTA có nút "Liên hệ studio" và số điện thoại, để thêm khối này nữa là mời hai
+   * lần liền nhau — lời mời thứ hai làm yếu lời mời thứ nhất.
+   */
+  showContact?: boolean;
+}
+
+const { showContact = true } = Astro.props;
+
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-line px-5 pt-14 pb-8 md:px-10 md:pt-20">
-  <div class="grid gap-10 md:grid-cols-12">
-    <div class="md:col-span-5">
-      <a href="/contact" class="link-underline text-title leading-none font-light tracking-tight">
-        Liên hệ
-      </a>
-    </div>
+<footer
+  class:list={[
+    'border-t border-line px-5 md:px-10',
+    // Khi chỉ còn dòng bản quyền thì footer là một dải mảnh, không phải một khối.
+    showContact ? 'pt-14 pb-8 md:pt-20' : 'py-6',
+  ]}
+>
+  {
+    showContact && (
+      <div class="grid gap-10 md:grid-cols-12">
+        <div class="md:col-span-5">
+          <a href="/contact" class="link-underline text-title leading-none font-light tracking-tight">
+            Liên hệ
+          </a>
+        </div>
 
-    <div class="md:col-span-3 md:col-start-7">
-      <ul class="space-y-1.5 text-sm text-ink-soft">
-        <li><a href={`mailto:${site.email}`} class="link-underline">{site.email}</a></li>
-        <li><a href={`tel:${site.phoneHref}`} class="link-underline">{site.phone}</a></li>
-      </ul>
-      {site.address && <p class="mt-5 max-w-[26ch] text-sm text-muted">{site.address}</p>}
-    </div>
-
-    <div class="md:col-span-3">
-      <ul class="space-y-1.5 text-sm text-ink-soft">
-        {
-          site.socials.map((s) => (
+        <div class="md:col-span-3 md:col-start-7">
+          <ul class="space-y-1.5 text-sm text-ink-soft">
             <li>
-              <a href={s.href} class="link-underline" target="_blank" rel="noopener noreferrer">
-                {s.label}
+              <a href={`mailto:${site.email}`} class="link-underline">
+                {site.email}
               </a>
             </li>
-          ))
-        }
-      </ul>
-    </div>
-  </div>
+            <li>
+              <a href={`tel:${site.phoneHref}`} class="link-underline">
+                {site.phone}
+              </a>
+            </li>
+          </ul>
+          {site.address && <p class="mt-5 max-w-[26ch] text-sm text-muted">{site.address}</p>}
+        </div>
 
-  <p class="mt-14 border-t border-line pt-6 text-xs text-muted">
+        <div class="md:col-span-3">
+          <ul class="space-y-1.5 text-sm text-ink-soft">
+            {site.socials.map((s) => (
+              <li>
+                <a href={s.href} class="link-underline" target="_blank" rel="noopener noreferrer">
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  <!-- Vạch kẻ trên dòng bản quyền chỉ cần khi có khối liên hệ ở trên để tách khỏi;
+       không có thì chính border-t của footer đã làm việc đó, thêm nữa là hai vạch. -->
+  <p class:list={['text-xs text-muted', showContact && 'mt-14 border-t border-line pt-6']}>
     © {year} {site.legalName}
   </p>
 </footer>

@@ -4,6 +4,10 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import WorkWall from '@/components/project/WorkWall.astro';
 import Press from '@/components/layout/Press.astro';
 import Hero from '@/components/layout/Hero.astro';
+import Values from '@/components/home/Values.astro';
+import Process from '@/components/home/Process.astro';
+import WhyUs from '@/components/home/WhyUs.astro';
+import ClosingCta from '@/components/home/ClosingCta.astro';
 import { site } from '@/config/site';
 
 const all = (await getCollection('projects', ({ data }) => !data.draft)).sort(
@@ -27,9 +31,20 @@ const hasMore = all.length > wall.length;
 */
 const moreHref = hasMore ? '/projects' : '/contact';
 const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu dự án của bạn';
+
+/*
+  Ảnh nền ô chốt trang lấy từ dự án featured đầu tiên.
+
+  Lấy lại ảnh đã có thay vì thêm asset mới: band này chỉ cần một mặt phẳng tối để chữ
+  trắng đứng lên, mà cover của dự án nổi bật thì luôn là ảnh studio tự chọn là đẹp
+  nhất. Ngã về dự án đầu danh sách khi chưa có dự án nào đánh featured.
+*/
+const ctaProject = all.find((p) => p.data.featured) ?? all[0];
 ---
 
-<BaseLayout>
+<!-- showFooterContact={false}: band CTA ở cuối trang đã là lời mời liên hệ, footer chỉ
+     còn dòng bản quyền. Các trang khác vẫn giữ khối liên hệ ở chân trang. -->
+<BaseLayout showFooterContact={false}>
   <!--
     Hero nằm TRONG lưới, là ô đầu tràn hết một hàng — không còn là section riêng.
 
@@ -48,7 +63,8 @@ const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu 
     <WorkWall projects={wall} moreHref={moreHref} moreLabel={moreLabel}>
       <div
         slot="lead"
-        class="relative aspect-[4/3] overflow-hidden bg-paper-deep sm:aspect-[16/9] lg:aspect-[3/1]"
+        data-skeleton="dark"
+        class="relative aspect-[4/3] overflow-hidden bg-ink sm:aspect-[16/9] lg:aspect-[3/1]"
       >
         <div class="absolute inset-x-0 -top-[7%] h-[114%]">
           <Hero alt={`Công trình tiêu biểu của ${site.name}`} />
@@ -76,15 +92,13 @@ const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu 
 
   <Press />
 
-  <!-- Một câu về cách làm việc, kèm hai lối đi. Phần chữ dài để ở trang Về studio. -->
-  <section class="px-5 py-20 md:px-10 md:py-28">
-    <p class="max-w-[30ch] text-title leading-[1.12] font-light tracking-tight" data-reveal>
-      Ánh sáng, thông gió, vật liệu địa phương.
-    </p>
-
-    <div class="mt-8 flex flex-wrap gap-x-8 gap-y-3">
-      <a href="/about" class="link-underline text-sm">Về studio</a>
-      <a href="/contact" class="link-underline text-sm">Liên hệ</a>
-    </div>
-  </section>
+  <!--
+    Mạch cuối trang: tuyên bố (Giá trị) → cách làm (Quy trình) → bằng chứng (Vì sao
+    chọn) → lời mời (ô chốt). Bốn band này thay cho một section hai link nhỏ trước đây,
+    và cố ý KHÔNG lặp nội dung /about: /about nói về văn phòng, nhóm và hạng mục.
+  -->
+  <Values />
+  <Process />
+  <WhyUs projectCount={all.length} />
+  <ClosingCta image={ctaProject?.data.cover} />
 </BaseLayout>

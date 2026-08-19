@@ -48,7 +48,9 @@ const ogImage = await getImage({
 
 <BaseLayout title={d.title} description={d.excerpt} ogImage={ogImage.src}>
   <article>
-    <header class="relative h-[86svh] min-h-[30rem] overflow-hidden">
+    <!-- bg-ink + skeleton tối: tên dự án là chữ trắng, phải đọc được ngay từ lúc ảnh
+         hero còn đang tải. -->
+    <header data-skeleton="dark" class="relative h-[86svh] min-h-[30rem] overflow-hidden bg-ink">
       <div class="absolute inset-x-0 -top-[6%] h-[112%]">
         <!--
           LCP của trang này. AVIF trước, WebP sau, JPEG chốt hạ — ảnh hero full-bleed
@@ -106,8 +108,48 @@ const ogImage = await getImage({
       </div>
     </header>
 
-    <!-- Tóm tắt + thông số đặt ngay dưới hero: người xem biết đây là gì trước khi cuộn ảnh. -->
-    <section class="px-5 py-20 md:px-10 md:py-28">
+    <!--
+      Ảnh nối thẳng vào hero, chữ dồn hết xuống dưới.
+
+      Người xem hồ sơ kiến trúc quyết định bằng ảnh: cuộn xem công trình trước, đọc sau
+      khi đã thấy cái gì đáng đọc. Bản trước chèn tóm tắt + bảng thông số vào giữa hero
+      và lưới ảnh — đúng chỗ người ta đang muốn xem tiếp thì gặp một khối chữ chắn ngang,
+      phải cuộn qua hết mới tới ảnh.
+
+      pt-10/14 chỉ để tách thanh tab khỏi mép hero, không phải một khoảng nghỉ thật:
+      lưới ảnh càng gần hero càng đọc ra là "còn nữa, cuộn tiếp đi".
+    -->
+    <section class="pt-10 pb-20 md:pt-14 md:pb-28">
+      <Gallery gallery={d.gallery} title={d.title} />
+    </section>
+
+    <!--
+      Nội dung dài viết trong MDX: prose hẹp để dòng chữ không quá 70 ký tự.
+
+      Đặt trong cùng lưới 12 cột và cùng cột với đoạn tóm tắt phía trên thay vì
+      mx-auto. Trước đây khối này canh giữa trong khi tiêu đề, tóm tắt canh trái còn
+      bảng thông số canh phải — bốn mốc canh lề khác nhau trên một trang, mắt không
+      có chỗ bám. Giờ cả trang chung một trục trái.
+    -->
+    <section class="px-5 pb-20 md:px-10 md:pb-28">
+      <div class="grid md:grid-cols-12">
+        <div
+          class="max-w-[62ch] space-y-6 text-lead leading-[1.7] text-ink-soft md:col-span-6 [&_h2]:pt-8 [&_h2]:text-title [&_h2]:font-light [&_h2]:tracking-tight [&_h2]:text-ink [&_strong]:font-medium [&_strong]:text-ink"
+          data-reveal
+        >
+          <Content />
+        </div>
+      </div>
+    </section>
+
+    <!--
+      Tóm tắt + thông số chốt cuối trang, sau cả lưới ảnh và phần mô tả.
+
+      Đây là phần tra cứu: xem xong ảnh, đọc xong mô tả rồi mới cần biết hạng mục, địa
+      điểm, diện tích. Giữ nguyên trục trái và lưới 12 cột như phần mô tả để cả trang
+      vẫn một hệ canh lề.
+    -->
+    <section class="px-5 pb-24 md:px-10 md:pb-36">
       <div class="grid gap-14 md:grid-cols-12">
         <div class="md:col-span-6">
           <p class="text-title leading-[1.18] font-light tracking-tight" data-reveal>
@@ -119,29 +161,6 @@ const ogImage = await getImage({
           <SpecTable project={project} />
         </div>
       </div>
-    </section>
-
-    <!--
-      Nội dung dài viết trong MDX: prose hẹp để dòng chữ không quá 70 ký tự.
-
-      Đặt trong cùng lưới 12 cột và cùng cột với đoạn tóm tắt phía trên thay vì
-      mx-auto. Trước đây khối này canh giữa trong khi tiêu đề, tóm tắt canh trái còn
-      bảng thông số canh phải — bốn mốc canh lề khác nhau trên một trang, mắt không
-      có chỗ bám. Giờ cả trang chung một trục trái.
-    -->
-    <section class="px-5 md:px-10">
-      <div class="grid md:grid-cols-12">
-        <div
-          class="max-w-[62ch] space-y-6 text-lead leading-[1.7] text-ink-soft md:col-span-6 [&_h2]:pt-8 [&_h2]:text-title [&_h2]:font-light [&_h2]:tracking-tight [&_h2]:text-ink [&_strong]:font-medium [&_strong]:text-ink"
-          data-reveal
-        >
-          <Content />
-        </div>
-      </div>
-    </section>
-
-    <section class="pt-20 pb-24 md:pt-32 md:pb-36">
-      <Gallery gallery={d.gallery} title={d.title} />
     </section>
 
     <!-- Điều hướng dự án kế tiếp: giữ người xem trong luồng xem hồ sơ. -->

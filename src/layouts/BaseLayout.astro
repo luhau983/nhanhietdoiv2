@@ -15,9 +15,17 @@ interface Props {
   ogImage?: string;
   /** Ẩn Footer ở những trang tự lo phần chân trang. */
   showFooter?: boolean;
+  /** Ẩn khối liên hệ trong Footer — xem chú thích prop showContact của Footer. */
+  showFooterContact?: boolean;
 }
 
-const { title, description = site.description, ogImage, showFooter = true } = Astro.props;
+const {
+  title,
+  description = site.description,
+  ogImage,
+  showFooter = true,
+  showFooterContact = true,
+} = Astro.props;
 
 const pageTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.positioning}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -89,7 +97,7 @@ const jsonLd = {
       <slot />
     </main>
 
-    {showFooter && <Footer />}
+    {showFooter && <Footer showContact={showFooterContact} />}
 
     <BackToTop />
     <ContactButtons />

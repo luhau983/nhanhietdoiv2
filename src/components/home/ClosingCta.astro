@@ -1,0 +1,75 @@
+---
+import { Picture } from 'astro:assets';
+import CtaLink from '@/components/ui/CtaLink.astro';
+import { site } from '@/config/site';
+
+interface Props {
+  /**
+   * Ảnh nền. Không bắt buộc: nếu chưa có dự án nào để lấy ảnh thì band vẫn phải dựng
+   * được trên nền mực, chứ không làm build đổ vì một content collection rỗng.
+   */
+  image?: ImageMetadata;
+}
+
+const { image } = Astro.props;
+---
+
+<!--
+  Ô chốt trang: một lời mời, hai lối liên hệ.
+
+  Thay cho hai link "Về studio / Liên hệ" nhỏ ở cuối trang trước đây — chúng nằm sau
+  bốn band nội dung nên gần như không ai nhìn thấy, mà lại là chỗ duy nhất trang chủ
+  mời khách liên hệ.
+
+  Khung ảnh dùng cùng cách chống hở mép như hero: lớp trong cao 114% và đẩy lên 7%,
+  đủ dư cho parallax ±5% mà không lộ nền.
+-->
+<section
+  data-skeleton={image ? 'dark' : undefined}
+  class="relative overflow-hidden bg-ink px-5 py-24 text-white md:px-10 md:py-36"
+>
+  {
+    image && (
+      <div class="absolute inset-0" aria-hidden="true">
+        <div class="absolute inset-x-0 -top-[7%] h-[114%]">
+          <Picture
+            src={image}
+            alt=""
+            formats={['avif', 'webp']}
+            fallbackFormat="jpeg"
+            widths={[640, 900, 1280, 1800, 2400]}
+            sizes="100vw"
+            loading="lazy"
+            data-img-fade
+            data-parallax="10"
+            pictureAttributes={{ class: 'block h-full w-full' }}
+            class="h-full w-full object-cover"
+          />
+        </div>
+
+        <div class="absolute inset-0 bg-ink/65"></div>
+      </div>
+    )
+  }
+
+  <div class="relative max-w-[46ch]">
+    <p class="label text-white/60">Bắt đầu</p>
+
+    <h2
+      class="mt-6 text-display leading-[0.98] font-light tracking-[-0.02em] text-balance"
+      data-reveal
+    >
+      Kể cho chúng tôi về mảnh đất của bạn.
+    </h2>
+
+    <p class="mt-6 max-w-[42ch] text-lead text-white/80">
+      Buổi trao đổi đầu tiên không mất phí: nghe nhu cầu, xem hiện trạng, nói thẳng về ngân sách.
+    </p>
+
+    <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+      <CtaLink href="/contact" variant="light-solid">Liên hệ studio</CtaLink>
+
+      <a href={`tel:${site.phoneHref}`} class="link-underline text-lead"> {site.phone} </a>
+    </div>
+  </div>
+</section>

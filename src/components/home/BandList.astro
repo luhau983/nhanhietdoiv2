@@ -1,0 +1,361 @@
+---
+/**
+ * Band hai cột: bên trái nhãn + một câu tiêu đề, bên phải danh sách mục có số thứ tự.
+ *
+ * Tồn tại vì ba band cuối trang chủ (Giá trị, Quy trình, Vì sao chọn studio) là cùng một
+ * loại nội dung — một tuyên bố kèm N mục diễn giải — nên phải trông như nhau. Viết riêng
+ * ba lần thì mỗi lần sửa nhịp chữ hay khoảng cách là ba chỗ phải sửa, và chỉ cần quên một
+ * chỗ là trang chủ có hai kiểu band gần giống nhau, thứ khó chịu hơn cả hai kiểu khác hẳn.
+ *
+ * Cột trái hẹp hơn cột phải (1fr / 1.4fr): bên trái là một câu, bên phải là các đoạn văn
+ * cần bề rộng để không vắt dòng vụn.
+ */
+interface Item {
+  /** Số thứ tự hai chữ số — cột số không nhảy chiều rộng giữa 09 và 10. */
+  num: string;
+  title: string;
+  body: string;
+}
+
+interface Props {
+  label: string;
+  heading: string;
+  items: readonly Item[];
+  /** Nền. Xen kẽ deep / paper giữa các band để mắt thấy ranh giới mà không cần thêm vạch. */
+  tone?: 'paper' | 'deep';
+  /** Neo cho link từ trang khác trỏ tới. Bắt buộc khi dùng collapseAfter. */
+  id?: string;
+  /**
+   * Chỉ hiện bấy nhiêu mục, phần còn lại nằm sau một nút bấm.
+   *
+   * Dành cho danh sách dài: quy trình 8 bước dựng hết ra là 1370px ở màn 1920, người xem
+   * phải cuộn qua một cột chữ dài trước khi tới lời mời liên hệ ở cuối trang.
+   */
+  collapseAfter?: number;
+  moreLabel?: string;
+  lessLabel?: string;
+}
+
+const {
+  label,
+  heading,
+  items,
+  tone = 'paper',
+  id,
+  collapseAfter,
+  moreLabel = 'Xem thêm',
+  lessLabel = 'Thu gọn',
+} = Astro.props;
+
+const isCollapsed = collapseAfter !== undefined && items.length > collapseAfter;
+
+// Đổ vỡ ngay lúc build thay vì ra một nút bấm không trỏ vào đâu: aria-controls sai là lỗi
+// trình đọc màn hình không ai phát hiện bằng mắt.
+if (isCollapsed && !id) {
+  throw new Error(
+    `BandList "${label}": dùng collapseAfter thì phải truyền prop id, vì nút bấm cần aria-controls trỏ tới danh sách.`,
+  );
+}
+
+const listId = `${id}-list`;
+---
+
+<section
+  id={id}
+  class:list={[
+    'border-t border-line px-5 py-20 md:px-10 md:py-28',
+    tone === 'deep' && 'bg-paper-deep',
+  ]}
+>
+  <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-20">
+    <div>
+      <p class="label">{label}</p>
+
+      <h2 class="mt-6 max-w-[24ch] text-title leading-[1.12] font-light tracking-tight" data-reveal>
+        {heading}
+      </h2>
+
+      <!-- Chỗ cho phần phụ của cột trái: band "Vì sao chọn studio" nhét hai con số vào đây. -->
+      <slot name="aside" />
+    </div>
+
+    <div>
+      <!-- Kẻ ngang giữa các mục, mục cuối kẻ thêm dưới để danh sách có điểm đóng. -->
+      <ul id={isCollapsed ? listId : undefined} class="lg:pt-2" data-band-list={isCollapsed ? '' : undefined}>
+        {
+          items.map((item, i) => {
+            const isExtra = isCollapsed && i >= collapseAfter!;
+
+            /*
+              Mục bị thu gọn KHÔNG mang data-reveal: nó đang display:none, mà
+              IntersectionObserver không bắn cho phần tử display:none — bấm mở ra là năm mục
+              mắc kẹt ở opacity 0. Cùng cái bẫy đã ghi ở Gallery.astro.
+            */
+            return (
+              <li
+                class="grid grid-cols-[3rem_1fr] gap-6 border-t border-line py-7 last:border-b"
+                hidden={isExtra}
+                data-band-extra={isExtra ? '' : undefined}
+                data-reveal={isExtra ? undefined : ''}
+                style={isExtra ? undefined : `--reveal-delay: ${i * 70}ms`}
+              >
+                <p class="label pt-1.5">{item.num}</p>
+
+                <div>
+                  <h3 class="text-lead font-normal tracking-tight">{item.title}</h3>
+                  <p class="mt-2.5 max-w-[52ch] text-sm leading-relaxed text-ink-soft">
+                    {item.body}
+                  </p>
+                </div>
+              </li>
+            );
+          })
+        }
+      </ul>
+
+      {
+        isCollapsed && (
+          <button
+            type="button"
+            class="link-underline mt-8 text-sm"
+            data-band-toggle
+            aria-controls={listId}
+            aria-expanded="false"
+            data-more-label={moreLabel}
+            data-less-label={lessLabel}
+          >
+            {moreLabel}
+          </button>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+{
+  /*
+    Không có JS thì mở sẵn cả danh sách.
+
+    Trạng thái thu gọn nằm ngay trong HTML (thuộc tính hidden) để không có cú nhảy layout
+    lúc tải — nhưng như vậy thì máy không chạy JS sẽ mất hẳn 5 bước quy trình. Style trong
+    noscript trả chúng về đúng display của thẻ li (grid) và ẩn cái nút không bấm được.
+
+    display: grid chứ không revert: [hidden] của UA là display:none, mà li ở đây là lưới
+    hai cột — revert sẽ trả về list-item và cột số vỡ.
+
+    is:inline là bắt buộc, hai lý do:
+      1. Astro không nội suy biểu thức trong <style> (nội dung style là raw text), nên viết
+         <style>{`...`}</style> thì cặp {` `} ra thẳng HTML và CSS sai cú pháp — đã đo ở
+         dist/index.html trước khi sửa.
+      2. <style> thường bị Astro bốc lên bundle CSS chung, tức là rule sẽ áp dụng cả khi có
+         JS — mở sẵn 5 mục và nút thu gọn biến mất, đúng ngược ý định.
+  */
+  isCollapsed && (
+    <noscript>
+      <style is:inline>
+        [data-band-extra][hidden] { display: grid !important; } [data-band-toggle] { display:
+        none !important; }
+      </style>
+    </noscript>
+  )
+}
+
+<style>
+  /*
+    Chuyển chiều cao chỉ bật trong lúc đang chuyển (data-animating), không để thường trực:
+    chiều cao danh sách còn đổi vì lý do khác — xoay ngang máy, đổi breakpoint làm chữ vắt
+    thêm dòng — mà những lần đó thì bò chiều cao nửa giây là sai, phải đổi ngay.
+
+    overflow: hidden để mục đang mờ vào không thò ra ngoài khi khối còn thấp hơn nó.
+  */
+  [data-band-list][data-animating] {
+    overflow: hidden;
+    transition: height 0.52s var(--ease-out-expo);
+  }
+
+  /*
+    Mờ vào bằng animation, KHÔNG bằng transition opacity: mục vừa bỏ hidden thì chưa có
+    "trạng thái trước" để nội suy, đặt opacity 0 rồi trả lại trong cùng một tác vụ là trình
+    duyệt huỷ luôn phép chuyển. Cùng lý do đã ghi ở Gallery.astro.
+
+    fill-mode both để mục đứng yên ở trạng thái mờ trong lúc chờ tới lượt mình — có vậy
+    kiểu so le mới thấy được.
+  */
+  [data-band-extra][data-entering] {
+    animation: band-item-in 0.42s var(--ease-out-expo) both;
+  }
+
+  [data-band-extra][data-leaving] {
+    animation: band-item-out 0.3s var(--ease-out-expo) both;
+  }
+
+  @keyframes band-item-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+
+  @keyframes band-item-out {
+    to {
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  const HEIGHT_MS = 520;
+  const FADE_MS = 420;
+  const STAGGER_MS = 55;
+
+  function reduced() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function listOf(toggle: HTMLButtonElement) {
+    const listId = toggle.getAttribute('aria-controls');
+    return listId ? document.getElementById(listId) : null;
+  }
+
+  /** Đổi trạng thái tức thì, không chuyển động. Dùng cho lúc vào trang bằng anchor. */
+  function setExpanded(toggle: HTMLButtonElement, expanded: boolean) {
+    const list = listOf(toggle);
+    if (!list) return;
+
+    list.querySelectorAll<HTMLElement>('[data-band-extra]').forEach((item) => {
+      item.hidden = !expanded;
+    });
+
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent =
+      (expanded ? toggle.dataset.lessLabel : toggle.dataset.moreLabel) ?? toggle.textContent;
+  }
+
+  const settleTimers = new WeakMap<HTMLElement, number>();
+
+  /*
+    Mở/thu có chuyển động: khoá chiều cao ở giá trị cũ, đo giá trị mới, rồi cho nó chạy
+    giữa hai mốc trong lúc các mục mờ vào (hoặc mờ ra) so le nhau.
+
+    Phải đo cả hai mốc bằng cách thật sự bỏ/đặt hidden rồi đọc offsetHeight — không có cách
+    nào tính trước chiều cao của năm mục có chữ vắt dòng theo bề rộng màn hình.
+  */
+  function animateExpanded(toggle: HTMLButtonElement, expanded: boolean) {
+    const list = listOf(toggle);
+    if (!list) return;
+
+    const extras = [...list.querySelectorAll<HTMLElement>('[data-band-extra]')];
+    if (!extras.length) return;
+
+    const from = list.offsetHeight;
+
+    // Hiện hết để đo mốc kia; lúc thu gọn thì vẫn giữ hiện trong suốt cú co lại, overflow
+    // hidden của khối sẽ cắt dần chúng.
+    extras.forEach((item) => {
+      item.hidden = false;
+    });
+    const shown = list.offsetHeight;
+
+    let to = shown;
+    if (!expanded) {
+      extras.forEach((item) => {
+        item.hidden = true;
+      });
+      to = list.offsetHeight;
+      extras.forEach((item) => {
+        item.hidden = false;
+      });
+    }
+
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent =
+      (expanded ? toggle.dataset.lessLabel : toggle.dataset.moreLabel) ?? toggle.textContent;
+
+    list.dataset.animating = '';
+    list.style.height = `${from}px`;
+
+    /*
+      Đọc offsetHeight để buộc trình duyệt chốt layout ở chiều cao cũ trước khi gán chiều
+      cao mới. Bỏ dòng này thì hai lần gán nằm cùng một frame, trình duyệt chỉ thấy giá trị
+      cuối và transition không chạy.
+    */
+    void list.offsetHeight;
+    list.style.height = `${to}px`;
+
+    extras.forEach((item, i) => {
+      // So le theo thứ tự khi mở, ngược lại khi thu: mục cuối biến đi trước.
+      const order = expanded ? i : extras.length - 1 - i;
+      item.style.animationDelay = `${order * STAGGER_MS}ms`;
+      item.dataset[expanded ? 'entering' : 'leaving'] = '';
+    });
+
+    window.clearTimeout(settleTimers.get(list));
+    settleTimers.set(
+      list,
+      window.setTimeout(
+        () => {
+          // Trả height về auto: khoá cứng px thì lần đổi breakpoint sau đó sẽ cắt mất chữ.
+          list.style.height = '';
+          delete list.dataset.animating;
+
+          extras.forEach((item) => {
+            item.hidden = !expanded;
+            item.style.animationDelay = '';
+            delete item.dataset.entering;
+            delete item.dataset.leaving;
+          });
+        },
+        Math.max(HEIGHT_MS, FADE_MS + STAGGER_MS * extras.length),
+      ),
+    );
+  }
+
+  /*
+    Uỷ quyền trên document, truy vấn phần tử lúc bấm: View Transitions thay nội dung trang
+    nên tham chiếu lưu sẵn sẽ chết sau mỗi lần điều hướng. Nhờ vậy cũng không cần gắn lại
+    theo astro:page-load.
+  */
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    const toggle = target?.closest<HTMLButtonElement>('[data-band-toggle]');
+    if (!toggle) return;
+
+    const wasExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+    if (reduced()) setExpanded(toggle, !wasExpanded);
+    else animateExpanded(toggle, !wasExpanded);
+
+    /*
+      Thu gọn khi đang cuộn ở giữa danh sách thì nút bị đẩy lên trên mép màn hình — người
+      bấm mất dấu chỗ mình vừa bấm. Kéo nó về lại tầm mắt.
+
+      Cuộn qua Lenis nếu có: gọi window.scrollTo trực tiếp thì vị trí nội bộ của Lenis lệch
+      khỏi vị trí thật (xem chú thích ở Motion.astro).
+    */
+    if (wasExpanded) {
+      const top = toggle.getBoundingClientRect().top;
+      if (top < 0) {
+        const y = window.scrollY + top - 120;
+        if (window.__lenis) window.__lenis.scrollTo(y);
+        else window.scrollTo({ top: y });
+      }
+    }
+  });
+
+  /*
+    Vào bằng anchor thì mở sẵn.
+
+    Trang /about có link "Chi tiết 8 bước" trỏ tới /#quy-trinh. Nếu tới đó mà danh sách vẫn
+    thu gọn thì link nói một đằng, trang cho một nẻo — người bấm phải bấm thêm một lần nữa
+    mới thấy đúng thứ vừa được mời xem.
+  */
+  function expandFromHash() {
+    if (!location.hash) return;
+
+    const section = document.querySelector(location.hash);
+    const toggle = section?.querySelector<HTMLButtonElement>('[data-band-toggle]');
+    if (toggle && toggle.getAttribute('aria-expanded') !== 'true') setExpanded(toggle, true);
+  }
+
+  document.addEventListener('astro:page-load', expandFromHash);
+</script>

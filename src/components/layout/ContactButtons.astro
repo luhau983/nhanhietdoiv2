@@ -15,7 +15,16 @@ function isExternal(href: string) {
 
   Bốn kênh này cũng có ở footer và trang /contact, nên nút nổi chỉ là đường tắt.
 -->
-<div class="contact-fab fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2 md:right-6 md:bottom-6">
+<!--
+  Thẻ bọc chỉ to bằng đúng cái nút, panel bung ra ngoài luồng layout.
+
+  Trước đây panel là con thường trong flex-col, nên dù đang ẩn nó vẫn quyết định bề rộng
+  thẻ bọc: đo được thẻ bọc rộng 123px (bằng viên "Messenger") và cao 236px. Thẻ bọc là div
+  trong suốt nhưng pointer-events vẫn auto, mà nó nằm sau BackToTop trong DOM và cùng z-40
+  — nên nó phủ trọn 56/56px bề ngang của nút về đầu trang và ăn hết click ở đó. Bấm vào nút
+  ấy không có gì xảy ra: elementFromPoint tại tâm nút trả về chính div này.
+-->
+<div class="contact-fab fixed right-4 bottom-4 z-40 flex flex-col items-end md:right-6 md:bottom-6">
   <div class="contact-panel flex flex-col items-end gap-2" id="contact-panel">
     {
       contactChannels.map((channel, i) => (
@@ -68,7 +77,20 @@ function isExternal(href: string) {
     phần chữ còn lại thành CSS rác và nuốt luôn rule .contact-panel bên dưới — panel
     mất trạng thái ẩn nên bung sẵn trên mọi trang.
   */
+  /*
+    position: absolute — thẻ bọc .contact-fab đang position: fixed nên nó là containing
+    block, không cần thêm relative.
+
+    padding-bottom thay cho gap-2 của thẻ bọc: 8px đó là cầu nối hover giữa nút và panel.
+    Nếu để khoảng trống thật thì con trỏ đi từ nút lên panel sẽ có một nhịp ra khỏi
+    .contact-fab, mouseout bắn và panel đóng ngay giữa đường — thao tác hover thành không
+    dùng được. Padding nằm trong panel nên vùng đó vẫn là con của .contact-fab.
+  */
   .contact-panel {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    padding-bottom: 0.5rem;
     visibility: hidden;
     opacity: 0;
     transform: translateY(0.5rem);
