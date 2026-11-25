@@ -11,7 +11,7 @@ Thay thế website WordPress cũ tại [nhanhietdoi.vn](https://nhanhietdoi.vn).
 | Nội dung | Content Collections + MDX + zod | Thêm dự án = thêm 1 file `.mdx`; sai schema thì build fail, không ra site lỗi |
 | Ảnh | `astro:assets` + sharp | Tối ưu lúc build, xuất WebP + `srcset`; không cần server xử lý ảnh |
 | Motion | Lenis + CSS scroll-driven animation | Parallax thuần CSS (`[data-parallax]` trong global.css), không GSAP |
-| Font | Be Vietnam Pro (self-host) | Có đủ dấu tiếng Việt — nhiều font display thì không |
+| Font | Open Sans variable (self-host) | Có đủ dấu tiếng Việt — nhiều font display thì không |
 
 ## Lệnh
 

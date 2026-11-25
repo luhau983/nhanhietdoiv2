@@ -1,6 +1,5 @@
-@import '@fontsource/be-vietnam-pro/300.css';
-@import '@fontsource/be-vietnam-pro/400.css';
-@import '@fontsource/be-vietnam-pro/500.css';
+/* Open Sans bản variable: một file cho mọi độ đậm 300–800, có đủ dấu tiếng Việt. */
+@import '@fontsource-variable/open-sans';
 @import 'tailwindcss';
 
 /* Design token — sửa ở đây là đổi toàn site.
@@ -15,7 +14,7 @@
   --color-accent: #8a5a2b;
 
   --font-sans:
-    'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    'Open Sans Variable', 'Open Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /*
     Thang chữ hạ xuống một bậc so với bản đầu.

@@ -32,7 +32,8 @@ const withoutProjects = types.filter((t) => t.count === 0);
 >
   <p class="label shrink-0 max-md:hidden">Loại hình</p>
 
-  <ul class="flex items-center gap-2 whitespace-nowrap md:flex-wrap">
+  <ul class="chips flex items-center gap-2 whitespace-nowrap md:flex-wrap">
+    <li class="pill" role="presentation" aria-hidden="true" data-type-pill></li>
     <li>
       <button type="button" class="chip" data-filter="all" aria-pressed="true">
         Tất cả <sup>{total}</sup>
@@ -59,6 +60,7 @@ const withoutProjects = types.filter((t) => t.count === 0);
 
 <style>
   .type-filter {
+    --pill-fill: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
     scrollbar-width: none;
     padding-block: 0.5rem;
   }
@@ -68,8 +70,8 @@ const withoutProjects = types.filter((t) => t.count === 0);
   }
 
   /*
-    Viên bo tròn. Loại đang chọn tô đặc mực — khác hẳn về khối lượng thị giác so với các
-    viên viền mảnh bên cạnh, nên liếc qua là biết đang xem loại nào. Bản trước chỉ gạch
+    Viên bo tròn. Loại đang chọn có nền xám ấm, viền mực và chữ đậm — khác rõ so với các
+    viên viền nhạt bên cạnh, nên liếc qua là biết đang xem loại nào. Bản trước chỉ gạch
     chân 1px: giữa một hàng chữ cùng cỡ thì gần như không thấy.
 
     Cao 40px: sát ngưỡng vùng chạm, mà hàng vẫn mảnh khi dính dưới header trên điện thoại.
@@ -99,11 +101,62 @@ const withoutProjects = types.filter((t) => t.count === 0);
     color: var(--color-ink);
   }
 
+  /* Tông sáng: nền xám ấm + viền mực 1px + chữ đậm hơn một bậc. Khối mực đặc đã thử và
+     quá nặng — nó hút mắt hơn cả ảnh công trình ngay bên dưới. */
   .chip[aria-pressed='true'] {
     border-color: var(--color-ink);
-    background-color: var(--color-ink);
-    color: var(--color-paper);
-    font-weight: 400;
+    background-color: var(--pill-fill);
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  /*
+    Cục nền TRƯỢT giữa các viên: một phần tử duy nhất đổi vị trí và bề rộng theo viên
+    đang chọn, thay vì viên này tắt nền, viên kia bật nền. Mắt theo được chuyển động nên
+    biết mình vừa đi từ loại nào sang loại nào.
+
+    Chỉ nhận việc khi JS đã đo xong ([data-pill]); trước đó viên đang chọn tự tô nền như
+    cũ, nên không JS thì vẫn thấy rõ đang ở loại nào.
+
+    view-transition-name: lúc đổi bộ lọc trang đang nằm trong một view transition, không
+    có tên riêng thì cục nền chỉ hoà mờ theo nền trang chứ không trượt. Khi đó tắt
+    transition CSS ([data-vt]) để hai cơ chế không cùng đẩy một phần tử.
+  */
+  .chips {
+    position: relative;
+  }
+
+  .chip {
+    position: relative;
+    z-index: 1;
+  }
+
+  .pill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-ink);
+    background-color: var(--pill-fill);
+    opacity: 0;
+    pointer-events: none;
+    view-transition-name: type-pill;
+  }
+
+  [data-pill] .pill {
+    opacity: 1;
+  }
+
+  [data-pill='ready']:not([data-vt]) .pill {
+    transition:
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-pill] .chip[aria-pressed='true'] {
+    border-color: transparent;
+    background-color: transparent;
   }
 
   .chip sup {
@@ -132,6 +185,27 @@ const withoutProjects = types.filter((t) => t.count === 0);
     const buttons = Array.from(bar.querySelectorAll<HTMLButtonElement>('[data-filter]'));
     const items = Array.from(wall.querySelectorAll<HTMLElement>('[data-project-type]'));
     const empty = document.querySelector<HTMLElement>('[data-type-empty]');
+    const pill = bar.querySelector<HTMLElement>('[data-type-pill]');
+    const barEl = bar;
+
+    /** Đặt cục nền trùng khít viên đang chọn. offsetLeft/Top tính theo <ul> (position: relative). */
+    function movePill(): void {
+      const active = buttons.find((btn) => btn.getAttribute('aria-pressed') === 'true');
+      if (!pill || !active) return;
+
+      pill.style.width = `${active.offsetWidth}px`;
+      pill.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
+      if (!barEl.dataset.pill) barEl.dataset.pill = 'placed';
+    }
+
+    /** Điện thoại: hàng viên cuộn ngang — đưa viên vừa chọn về giữa để thấy cả hai bên. */
+    function centerActive(): void {
+      const active = buttons.find((btn) => btn.getAttribute('aria-pressed') === 'true');
+      if (!active || barEl.scrollWidth <= barEl.clientWidth) return;
+
+      const left = active.offsetLeft - (barEl.clientWidth - active.offsetWidth) / 2;
+      barEl.scrollTo({ left, behavior: 'smooth' });
+    }
 
     function apply(type: string, updateUrl: boolean): void {
       let visible = 0;
@@ -145,6 +219,9 @@ const withoutProjects = types.filter((t) => t.count === 0);
       buttons.forEach((btn) => {
         btn.setAttribute('aria-pressed', String(btn.dataset.filter === type));
       });
+
+      movePill();
+      if (updateUrl) centerActive();
 
       empty?.classList.toggle('hidden', visible > 0);
 
@@ -181,7 +258,9 @@ const withoutProjects = types.filter((t) => t.count === 0);
         return;
       }
 
-      document.startViewTransition(() => apply(type, true));
+      barEl.dataset.vt = '';
+      const vt = document.startViewTransition(() => apply(type, true));
+      void vt.finished.finally(() => delete barEl.dataset.vt);
     }
 
     buttons.forEach((btn) => {
@@ -191,6 +270,15 @@ const withoutProjects = types.filter((t) => t.count === 0);
     // Tôn trọng ?loai= khi vào từ link ngoài (trang dịch vụ, footer).
     const initial = new URL(window.location.href).searchParams.get(param);
     if (initial && buttons.some((b) => b.dataset.filter === initial)) apply(initial, false);
+
+    // Đặt lần đầu không chạy animation; sau một khung hình mới cho phép trượt. Đo lại khi
+    // font tải xong hoặc hàng viên đổi kích thước (xoay máy, xuống dòng ở màn hẹp).
+    movePill();
+    requestAnimationFrame(() => {
+      if (barEl.dataset.pill) barEl.dataset.pill = 'ready';
+    });
+    void document.fonts.ready.then(movePill);
+    new ResizeObserver(movePill).observe(barEl);
   }
 
   // Script bị hoist sau khi ClientRouter đã bắn astro:page-load nên phải gọi thẳng một lần.
