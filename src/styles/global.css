@@ -77,7 +77,9 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-weight: 300;
+    /* 400 cho chữ thân bài: Open Sans ở 300 quá mảnh dưới 16px trên màn điện thoại.
+       Tiêu đề lớn vẫn dùng font-light (300) tại chỗ. */
+    font-weight: 400;
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -104,8 +106,8 @@
   /* Nhãn nhỏ chữ hoa giãn cách — chữ ký thị giác của thể loại site kiến trúc. */
   .label {
     font-size: 0.6875rem;
-    font-weight: 400;
-    letter-spacing: 0.18em;
+    font-weight: 500;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--color-muted);
   }
@@ -147,6 +149,14 @@
   [data-reveal][data-revealed] {
     opacity: 1;
     transform: none;
+  }
+
+  /* Không có JS thì không ai gắn [data-revealed] — nội dung phải hiện sẵn. */
+  @media (scripting: none) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   /*

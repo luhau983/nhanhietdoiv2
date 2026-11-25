@@ -45,10 +45,10 @@ const ctaProject = all.find((p) => p.data.featured) ?? all[0];
   </section>
 
   <Band label="Quy trình">
-    <ol class="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+    <ol class="grid grid-cols-2 gap-px bg-line lg:grid-cols-4">
       {
         PROCESS_BY_PHASE.map((phase) => (
-          <li class="bg-paper py-5 sm:px-5 lg:first:pl-0">
+          <li class="bg-paper py-5 odd:pr-4 even:pl-4 lg:px-5 lg:first:pl-0">
             <span class="label tabular-nums">{phase.range}</span>
             <p class="mt-3 text-title leading-tight font-light tracking-tight">{phase.label}</p>
           </li>
