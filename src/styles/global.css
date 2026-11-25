@@ -49,6 +49,17 @@
 }
 
 @layer base {
+  :root {
+    /* Chiều cao header cố định — mọi trang dùng để chừa chỗ phía trên. */
+    --header-h: 4.0625rem;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --header-h: 4.8125rem;
+    }
+  }
+
   html {
     /* Lenis điều khiển scroll; tắt smooth native để hai cơ chế không đánh nhau. */
     scroll-behavior: auto;
@@ -222,6 +233,30 @@
   */
   [data-skeleton][data-loaded] {
     background-image: none;
+  }
+}
+
+/*
+  Parallax bằng CSS scroll-driven animation, thay cho GSAP ScrollTrigger (~50KB JS).
+  Trình duyệt chưa hỗ trợ thì ảnh đứng yên — mất hiệu ứng, không mất nội dung.
+  Khung chứa phải cao hơn ô nhìn 14% (-top-[7%] h-[114%]) để ±5% không lộ mép.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-parallax] {
+      animation: parallax linear both;
+      animation-timeline: view();
+    }
+  }
+}
+
+@keyframes parallax {
+  from {
+    transform: translateY(-5%);
+  }
+
+  to {
+    transform: translateY(5%);
   }
 }
 

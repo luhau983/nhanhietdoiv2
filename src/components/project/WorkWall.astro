@@ -1,154 +1,99 @@
 ---
 import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
+import { projectPath } from '@/config/routes';
 import { typeLabel } from '@/config/taxonomy';
+import { coverAlt, type Project } from '@/lib/projects';
 
 interface Props {
-  projects: CollectionEntry<'projects'>[];
-  /** Số ô tải eager — chỉ nên bằng số ô thực sự nằm trong màn hình đầu. */
+  projects: Project[];
+  /**
+   * Ô đầu tiên lớn gấp bốn (2 cột × 2 hàng) — dùng ở trang chủ để lưới có điểm nhấn.
+   * Khi người xem lọc theo loại hình thì ô lớn tự trở về cỡ thường (xem TypeFilter).
+   */
+  feature?: boolean;
+  /** Số ô tải eager — chỉ nên bằng số ô nằm trong màn hình đầu. */
   eagerCount?: number;
-  /** Ô chữ chốt cuối lưới: vừa là điểm dừng, vừa lấp ô lẻ của hàng cuối. */
+  /** Ô chữ chốt cuối lưới: điểm dừng, đồng thời lấp ô lẻ của hàng cuối. */
   moreHref?: string;
   moreLabel?: string;
 }
 
-/*
-  Slot "lead": ô mở đầu tràn hết một hàng lưới, dùng cho hero trang chủ.
+const { projects, feature = false, eagerCount = 4, moreHref, moreLabel } = Astro.props;
 
-  Đặt hero vào trong chính <ul> chứ không để thành section riêng phía trên: hero
-  rời cao 74svh nuốt 74% màn điện thoại, vào trang chỉ thấy hai ô dự án ló ở mép
-  dưới. Thành ô đầu của lưới thì hero và lưới là một khối liền, màn đầu ở 375×812
-  hiện một ảnh lớn + 5 dự án.
-
-  col-span-full nên nó luôn chiếm trọn một hàng ở mọi breakpoint, giữ nguyên phép
-  chia hết của lưới: 2 cột → 2+11+1=14, 3 → 15, 4 → 16, 6 → 18, không hàng nào lẻ ô.
-*/
-const hasLead = Astro.slots.has('lead');
-
-// Mặc định 6 = đúng một hàng đầy ở breakpoint rộng nhất (lg:grid-cols-6). Để 4 như
-// trước thì hai ô cuối của hàng đầu vẫn nằm trong màn hình đầu mà lại tải lazy.
-const { projects, eagerCount = 6, moreHref, moreLabel } = Astro.props;
-
-/*
-  sizes phải bám đúng số cột của lưới, nếu không trình duyệt chọn nhầm bậc srcset:
-  lưới là 2 / sm:3 / md:4 / lg:6 cột, tương ứng 50 / 33.33 / 25 / 16.67vw. Khai báo
-  cũ (25vw ở lg, 33vw ở md) lệch nguyên một bậc nên mỗi ô tải ảnh to gấp rưỡi mức cần.
-
-  Breakpoint viết theo đúng mốc Tailwind: sm=640, md=768, lg=1024.
-*/
-const TILE_SIZES =
-  '(min-width: 1024px) 16.67vw, (min-width: 768px) 25vw, (min-width: 640px) 33.33vw, 50vw';
-
-// Ô vuông cạnh ~240px ở màn 1440 và ~430px ở màn 2560; nhân DPR 2 là ~860px.
-const TILE_WIDTHS = [240, 360, 480, 640, 960];
+// sizes bám đúng số cột 2 / md:3 / lg:4, lệch là trình duyệt tải nhầm bậc srcset.
+const TILE_SIZES = '(min-width: 1024px) 25vw, (min-width: 768px) 33.33vw, 50vw';
+const FEATURE_SIZES = '(min-width: 1024px) 50vw, (min-width: 768px) 66.66vw, 100vw';
+const TILE_WIDTHS = [240, 360, 480, 720, 960];
+const FEATURE_WIDTHS = [480, 720, 960, 1280, 1600];
 ---
 
 <!--
-  Lưới dày tràn viền: toàn bộ công trình hiện ra cùng lúc, người xem nắm được
-  khối lượng và thể loại việc studio làm mà không phải đọc một dòng nào.
+  Lưới thoáng: ảnh 4:3 giữ khổ ngang của ảnh kiến trúc, có khoảng thở giữa các ô, chú
+  thích nằm DƯỚI ảnh — ảnh không bị lớp phủ đè lên, tên + loại hình luôn đọc được.
 
-  Cải tiến so với các trang cùng thể loại: lưới của họ hoàn toàn không nhãn nên
-  không phân biệt được nhà ở với resort hay cao tầng. Ở đây tên và hạng mục hiện
-  khi hover, và hiện thường trực trên mobile vì cảm ứng không có hover.
+  Mỗi ô là flex dọc với khung ảnh flex-1: ô thường thì khung giữ đúng 4:3, còn ô lớn
+  (2×2) thì khung tự giãn lấp trọn hai hàng nên đáy ảnh vẫn thẳng với hàng bên cạnh.
+
+  WebP một định dạng: AVIF cho thumbnail đốt thời gian build mà mắt không thấy khác.
 -->
 <ul
-  class="grid grid-cols-2 gap-px bg-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+  class="work-wall grid grid-cols-2 gap-x-3 gap-y-7 px-5 md:grid-cols-3 md:gap-x-5 md:gap-y-10 md:px-10 lg:grid-cols-4"
   data-work-wall
 >
   {
-    hasLead && (
-      <li class="col-span-full">
-        <slot name="lead" />
-      </li>
-    )
-  }
+    projects.map((project, i) => {
+      const isFeature = feature && i === 0;
 
-  {
-    projects.map((project, i) => (
-      <li data-project-type={project.data.type}>
-        <a
-          href={`/projects/${project.id}`}
-          data-skeleton
-          class="group relative block aspect-square overflow-hidden bg-paper-deep"
-        >
-          <!--
-            WebP một định dạng, KHÔNG dùng Picture + AVIF ở đây.
+      return (
+        <li data-project-type={project.data.type} data-feature={isFeature ? '' : undefined}>
+          <a href={projectPath(project.id)} class="group flex h-full flex-col">
+            <div data-skeleton class="tile-frame aspect-[4/3] flex-1 overflow-hidden bg-paper-deep">
+              <Image
+                src={project.data.cover}
+                alt={coverAlt(project)}
+                quality={isFeature ? 76 : 70}
+                widths={isFeature ? FEATURE_WIDTHS : TILE_WIDTHS}
+                sizes={isFeature ? FEATURE_SIZES : TILE_SIZES}
+                loading={i < eagerCount ? 'eager' : 'lazy'}
+                fetchpriority={i === 0 ? 'high' : 'auto'}
+                decoding="async"
+                data-img-fade={i < eagerCount ? undefined : true}
+                class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.03]"
+              />
+            </div>
 
-            Đã thử và đo: bật AVIF cho lưới này cộng với gallery đẩy số lần encode
-            mỗi lần build lên hơn 1.100, build mất ~25 phút và dist phình lên 189MB —
-            quá đắt cho 11 ô thumbnail crop vuông rộng ~240px, nơi AVIF gần như không
-            hơn WebP về cảm nhận. AVIF chỉ giữ cho ảnh hero (LCP).
-
-            quality 68: ô nhỏ và bị crop, hạ chất lượng ở cỡ này mắt không bắt được
-            nhưng dung lượng giảm rõ.
-          -->
-          <Image
-            src={project.data.cover}
-            alt={`${project.data.title} — ${typeLabel(project.data.type)} tại ${project.data.location}`}
-            quality={68}
-            widths={TILE_WIDTHS}
-            sizes={TILE_SIZES}
-            loading={i < eagerCount ? 'eager' : 'lazy'}
-            fetchpriority={i === 0 ? 'high' : 'auto'}
-            decoding={i === 0 ? 'sync' : 'async'}
-            data-img-fade={i < eagerCount ? undefined : true}
-            class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
-          />
-
-          <!--
-            Gradient nhạt hơn hẳn ở mobile: trên desktop lớp phủ chỉ bật lúc hover
-            nên đậm bao nhiêu cũng được, còn ở mobile nó bật thường trực cho cả 11
-            ô — để nguyên from-black/80 thì cuộn xuống chỉ thấy một dãy hộp đen,
-            ảnh công trình bị dìm mất nửa dưới.
-          -->
-          <div
-            class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/55 via-black/5 to-transparent p-4 opacity-0 transition-opacity duration-500 ease-[var(--ease-hover)] group-hover:opacity-100 group-focus-visible:opacity-100 max-md:opacity-100 md:from-black/80 md:via-black/10 md:p-5"
-          >
-            <!--
-              Mobile chỉ còn một dòng tên. Ô rộng ~187px nên "Căn hộ | Penthouse —
-              2021" xuống ba dòng và đẩy ô lệch hẳn so với ô bên cạnh; hạng mục và
-              năm vốn đã có ở chip lọc trang /projects lẫn trang chi tiết.
-            -->
-            <p class="line-clamp-1 text-sm leading-tight text-white md:line-clamp-2 md:text-base">
-              {project.data.title}
-            </p>
-            <p
-              class="hidden text-[0.625rem] tracking-[0.16em] text-white/75 uppercase md:mt-1.5 md:block"
-            >
-              {typeLabel(project.data.type)} — {project.data.year}
-            </p>
-
-            {/* Nhãn link hiện khi hover: nói rõ ô ảnh dẫn đi đâu, không để người
-                xem phải đoán xem có bấm được không. */}
-            <span
-              class="mt-3 hidden text-[0.625rem] tracking-[0.16em] text-white uppercase md:block md:opacity-0 md:transition-opacity md:duration-500 md:ease-[var(--ease-hover)] md:group-hover:opacity-100"
-            >
-              Xem dự án
-              <span class="ml-1.5 inline-block" aria-hidden="true">
-                →
-              </span>
-            </span>
-          </div>
-        </a>
-      </li>
-    ))
+            <div class="mt-2.5 flex flex-col-reverse gap-0.5 md:mt-3 md:flex-row md:items-baseline md:justify-between md:gap-4">
+              <p class="truncate text-sm leading-snug md:text-[0.9375rem]">
+                <span class="link-underline">{project.data.title}</span>
+              </p>
+              <p class="shrink-0 text-[0.625rem] tracking-[0.14em] text-muted uppercase">
+                {typeLabel(project.data.type)}
+              </p>
+            </div>
+          </a>
+        </li>
+      );
+    })
   }
 
   {
     moreHref && (
-      <li>
-        <a
-          href={moreHref}
-          class="group flex aspect-square items-end bg-ink p-4 text-paper md:p-5"
-        >
-          <span class="text-[0.9375rem] leading-tight">
-            {moreLabel}
-            <span
-              class="ml-2 inline-block transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-1.5"
-              aria-hidden="true"
-            >
-              →
+      <li data-more>
+        <a href={moreHref} class="group flex h-full flex-col">
+          <span class="flex aspect-[4/3] flex-1 items-end bg-ink p-4 text-paper transition-colors duration-500 group-hover:bg-ink-soft md:p-6">
+            <span class="text-[0.9375rem] leading-tight md:text-lead">
+              {moreLabel}
+              <span
+                class="ml-1.5 inline-block transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:translate-x-1.5"
+                aria-hidden="true"
+              >
+                →
+              </span>
             </span>
+          </span>
+          {/* Dòng trống giữ chỗ chú thích để đáy ô mực thẳng với đáy ảnh cùng hàng. */}
+          <span class="mt-2.5 text-sm leading-snug md:mt-3 md:text-[0.9375rem]" aria-hidden="true">
+            &nbsp;
           </span>
         </a>
       </li>
@@ -158,22 +103,54 @@ const TILE_WIDTHS = [240, 360, 480, 640, 960];
 
 <style>
   /*
-    :global vì <Image> của Astro không nhận attribute scope, nên selector bị bó
-    scope sẽ không khớp với thẻ img nó sinh ra. Tên lớp chỉ dùng ở file này.
-  */
-  @media (hover: hover) {
-    /*
-      Nâng ảnh lên layer riêng ngay lúc trỏ vào ô. Không có bước này thì mỗi khung
-      hình của phép phóng là một lần raster lại bitmap; ở đoạn cuối, khi bước scale
-      nhỏ dần xuống dưới một pixel, mắt bắt được đúng chỗ đó thành ra thấy rung.
+    Ô lớn: trọn chiều ngang ở điện thoại (2 cột), 2×2 từ md. Khung ảnh bỏ tỉ lệ cứng
+    để flex-1 kéo nó cao đúng bằng hai hàng.
 
-      Đặt trên :hover chứ không đặt sẵn: để sẵn thì 11 ô là 11 layer thường trú,
-      tốn bộ nhớ ảnh mà 10 trong số đó không hề chuyển động.
-    */
+    Tắt khi đang lọc ([data-filtered]): lúc đó ô đầu có thể đang ẩn, và một ô 2×2 đứng
+    giữa vài kết quả lọc trông như lỗi.
+  */
+  .work-wall:not([data-filtered]) > li[data-feature] {
+    grid-column: span 2;
+  }
+
+  .work-wall:not([data-filtered]) > li[data-feature] .tile-frame {
+    aspect-ratio: 3 / 2;
+  }
+
+  @media (min-width: 768px) {
+    .work-wall:not([data-filtered]) > li[data-feature] {
+      grid-row: span 2;
+    }
+
+    .work-wall:not([data-filtered]) > li[data-feature] .tile-frame {
+      aspect-ratio: auto;
+    }
+  }
+
+  /*
+    Có ô lớn thì lưới 4 cột dư đúng một ô ở hàng cuối (4 + 10 + 1 = 15). Ô chốt giãn
+    2 cột để lấp. Chỉ ở lg: lưới 3 cột thì 15 ô đã vừa khít 5 hàng.
+  */
+  @media (min-width: 1024px) {
+    .work-wall:not([data-filtered]):has(> li[data-feature]) > li[data-more] {
+      grid-column: span 2;
+    }
+
+    .work-wall:not([data-filtered]):has(> li[data-feature]) > li[data-more] > a > span:first-child {
+      aspect-ratio: auto;
+    }
+  }
+
+  /* :global vì <Image> không nhận attribute scope. Nâng layer lúc hover để phép phóng
+     không raster lại bitmap từng khung hình; `scale` vì Tailwind 4 tách khỏi transform. */
+  @media (hover: hover) {
     :global(.group:hover .tile-media) {
-      /* Khai cả scale: Tailwind 4 dịch scale-[1.04] ra thuộc tính `scale` riêng
-         chứ không gộp vào `transform` nữa. */
       will-change: transform, scale;
     }
+  }
+
+  /* Hover cả ô thì gạch chân tên dự án chạy ra, không chỉ khi trỏ đúng dòng chữ. */
+  :global(.group:hover .link-underline::after) {
+    transform: scaleX(1);
   }
 </style>

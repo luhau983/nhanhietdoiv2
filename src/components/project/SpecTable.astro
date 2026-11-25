@@ -1,9 +1,9 @@
 ---
-import type { CollectionEntry } from 'astro:content';
 import { statusLabel, typeLabel } from '@/config/taxonomy';
+import type { Project } from '@/lib/projects';
 
 interface Props {
-  project: CollectionEntry<'projects'>;
+  project: Project;
 }
 
 const { project } = Astro.props;
@@ -13,7 +13,7 @@ const d = project.data;
 // Chỉ hiện dòng có dữ liệu, không để "—" trống trải khắp bảng.
 const rows: Array<{ label: string; value: string }> = [
   { label: 'Hạng mục', value: typeLabel(d.type) },
-  { label: 'Địa điểm', value: d.location },
+  ...(d.location ? [{ label: 'Địa điểm', value: d.location }] : []),
   { label: 'Năm', value: String(d.year) },
   { label: 'Trạng thái', value: statusLabel(d.status) },
   ...(d.area ? [{ label: 'Diện tích', value: d.area }] : []),

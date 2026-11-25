@@ -1,0 +1,82 @@
+---
+import { Picture } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Band from '@/components/section/Band.astro';
+import IndexList from '@/components/section/IndexList.astro';
+import PageHead from '@/components/section/PageHead.astro';
+import Press from '@/components/section/Press.astro';
+import ClosingCta from '@/components/section/ClosingCta.astro';
+import studioImage from '@/assets/studio.jpg';
+import { site } from '@/config/site';
+import { TEAM, VALUES, WHY_US } from '@/config/studio';
+import { getProjects } from '@/lib/projects';
+
+const projects = await getProjects();
+
+// Chỉ giữ con số kiểm chứng được lúc build: năm hoạt động và số dự án đã đăng.
+const stats = [
+  { n: new Date().getFullYear() - site.foundedYear, label: 'Năm hoạt động' },
+  { n: projects.length, label: 'Dự án đã công bố' },
+];
+---
+
+<BaseLayout
+  title="Studio"
+  description={`${site.legalName} — văn phòng kiến trúc tại ${site.city}, hoạt động từ ${site.foundedYear}.`}
+  showFooterContact={false}
+>
+  <PageHead label={`${site.city} — từ ${site.foundedYear}`} title="Ánh sáng, thông gió, vật liệu địa phương." />
+
+  <figure data-skeleton class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]">
+    <div class="absolute inset-x-0 -top-[7%] h-[114%]">
+      <Picture
+        src={studioImage}
+        alt={`Văn phòng làm việc của ${site.name}`}
+        formats={['avif', 'webp']}
+        fallbackFormat="jpeg"
+        widths={[640, 1280, 1800]}
+        sizes="100vw"
+        loading="eager"
+        fetchpriority="high"
+        data-parallax
+        pictureAttributes={{ class: 'block h-full w-full' }}
+        class="h-full w-full object-cover"
+      />
+    </div>
+  </figure>
+
+  <Band label="Giá trị">
+    <IndexList items={VALUES} />
+  </Band>
+
+  <Band label="Vì sao chọn" tone="deep">
+    <dl slot="aside" class="mt-8 flex gap-10">
+      {
+        stats.map((stat) => (
+          <div>
+            <dd class="text-display leading-none font-light tracking-tight tabular-nums">{stat.n}</dd>
+            <dt class="label mt-2.5">{stat.label}</dt>
+          </div>
+        ))
+      }
+    </dl>
+
+    <IndexList items={WHY_US} />
+  </Band>
+
+  <Band label="Nhóm">
+    <ul class="grid gap-8 sm:grid-cols-3">
+      {
+        TEAM.map((member) => (
+          <li>
+            <p class="text-title leading-tight font-light tracking-tight">{member.name}</p>
+            <p class="label mt-2">{member.role}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </Band>
+
+  <Press />
+  <ClosingCta />
+</BaseLayout>

@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   // Đổi thành domain thật trước khi deploy — sitemap và canonical URL dựa vào đây.
-  site: 'https://studio07.vn',
+  site: 'https://nhanhietdoi.vn',
 
   // Xuất HTML tĩnh: chạy được trên shared hosting, không cần Node runtime.
   output: 'static',

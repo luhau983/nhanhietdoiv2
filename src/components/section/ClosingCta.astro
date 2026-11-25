@@ -1,0 +1,54 @@
+---
+import { Image } from 'astro:assets';
+import CtaLink from '@/components/ui/CtaLink.astro';
+import { ROUTES } from '@/config/routes';
+import { site } from '@/config/site';
+
+interface Props {
+  /** Ảnh nền. Không có thì band vẫn dựng được trên nền mực. */
+  image?: ImageMetadata;
+}
+
+const { image } = Astro.props;
+---
+
+<!-- Ô chốt trang: một lời mời, hai lối liên hệ. Trang nào dùng band này thì tắt khối
+     liên hệ ở footer (showFooterContact={false}) để không mời hai lần liền nhau. -->
+<section
+  data-skeleton={image ? 'dark' : undefined}
+  class="relative overflow-hidden bg-ink px-5 py-20 text-white md:px-10 md:py-32"
+>
+  {
+    image && (
+      <div class="absolute inset-0" aria-hidden="true">
+        <div class="absolute inset-x-0 -top-[7%] h-[114%]" data-parallax>
+          <Image
+            src={image}
+            alt=""
+            quality={70}
+            widths={[640, 900, 1280, 1800]}
+            sizes="100vw"
+            loading="lazy"
+            data-img-fade
+            class="h-full w-full object-cover"
+          />
+        </div>
+
+        <div class="absolute inset-0 bg-ink/65" />
+      </div>
+    )
+  }
+
+  <div class="relative">
+    <p class="label text-white/60">Liên hệ</p>
+
+    <h2 class="mt-5 max-w-[16ch] text-display leading-[0.98] font-light tracking-[-0.025em] text-balance">
+      Bắt đầu công trình của bạn.
+    </h2>
+
+    <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+      <CtaLink href={ROUTES.contact} variant="light-solid">Liên hệ studio</CtaLink>
+      <a href={`tel:${site.phoneHref}`} class="link-underline text-lead">{site.phone}</a>
+    </div>
+  </div>
+</section>

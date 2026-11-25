@@ -1,12 +1,12 @@
 ---
 /**
- * Nơi duy nhất khởi tạo motion cho toàn site: smooth scroll, reveal, parallax.
+ * Nơi duy nhất khởi tạo motion bằng JS: smooth scroll, reveal, trạng thái tải ảnh.
  *
- * Ba nguyên tắc:
- * 1. GSAP chỉ tải khi trang thực sự có phần tử [data-parallax] — trang liên hệ
- *    không cần trả 50KB JS.
- * 2. prefers-reduced-motion tắt sạch Lenis và GSAP, không chỉ rút ngắn thời lượng.
- * 3. Mọi thứ re-init theo astro:page-load để hoạt động với View Transitions.
+ * Parallax KHÔNG nằm ở đây: nó là CSS scroll-driven animation trong global.css
+ * ([data-parallax]), không tốn byte JS nào.
+ *
+ * 1. prefers-reduced-motion tắt sạch Lenis, không chỉ rút ngắn thời lượng.
+ * 2. Mọi thứ re-init theo astro:page-load để hoạt động với View Transitions.
  */
 ---
 
@@ -146,64 +146,12 @@
     cleanups.push(() => observer.disconnect());
   }
 
-  async function initParallax() {
-    const targets = document.querySelectorAll<HTMLElement>('[data-parallax]');
-    if (!targets.length || reduced.matches) return;
-
-    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
-      import('gsap'),
-      import('gsap/ScrollTrigger'),
-    ]);
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Lenis không phát scroll event của window, phải đẩy tay sang ScrollTrigger.
-    if (lenis) {
-      const onScroll = () => ScrollTrigger.update();
-      lenis.on('scroll', onScroll);
-      cleanups.push(() => lenis?.off('scroll', onScroll));
-    }
-
-    targets.forEach((el) => {
-      const strength = Number(el.dataset.parallax || '12');
-      gsap.fromTo(
-        el,
-        { yPercent: -strength / 2 },
-        {
-          yPercent: strength / 2,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: el.parentElement ?? el,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: true,
-          },
-        },
-      );
-    });
-
-    ScrollTrigger.refresh();
-
-    cleanups.push(() => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
-      gsap.killTweensOf(targets);
-    });
-  }
-
-  /*
-    Không còn initHeaderTheme.
-
-    Header từng có hai trạng thái — trong suốt chữ trắng khi nằm trên ảnh hero, nền
-    giấy chữ mực khi hết hero — do một IntersectionObserver ở đây bật/tắt. Bỏ đi vì
-    logo là ảnh raster màu cố định phải giữ nguyên màu ở mọi nơi, nên header buộc
-    phải có nền ổn định. Xem phần chú thích đầu Header.astro.
-  */
   function boot() {
     teardown();
     initSmoothScroll();
     initReveal();
     initImageLoading();
     initSkeletonSweep();
-    void initParallax();
   }
 
   // astro:page-load chạy cả lần tải đầu và sau mỗi lần điều hướng View Transitions.

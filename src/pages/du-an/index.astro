@@ -1,0 +1,28 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import TypeFilter from '@/components/project/TypeFilter.astro';
+import WorkWall from '@/components/project/WorkWall.astro';
+import { ROUTES } from '@/config/routes';
+import { site } from '@/config/site';
+import { countByType, getProjects } from '@/lib/projects';
+
+const projects = await getProjects();
+---
+
+<BaseLayout
+  title="Dự án"
+  description={`Dự án của ${site.name}: nhà phố, biệt thự, căn hộ, khách sạn — resort, cafe — nhà hàng, spa, showroom.`}
+>
+  <!-- Thanh lọc là toàn bộ phần chữ của trang. Còn lại để ảnh nói. -->
+  <h1 class="sr-only">Dự án</h1>
+
+  <TypeFilter
+    types={countByType(projects)}
+    total={projects.length}
+    class="pt-[calc(var(--header-h)+1.5rem)] pb-3 md:pt-[calc(var(--header-h)+2.5rem)] md:pb-5"
+  />
+
+  <div class="pb-16 md:pb-24">
+    <WorkWall projects={projects} moreHref={ROUTES.contact} moreLabel="Bắt đầu dự án của bạn" />
+  </div>
+</BaseLayout>

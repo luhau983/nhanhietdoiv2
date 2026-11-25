@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ROUTES } from '@/config/routes';
 ---
 
 <BaseLayout title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại.">
@@ -10,7 +11,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     </h1>
     <div class="mt-10 flex flex-wrap gap-x-8 gap-y-3">
       <a href="/" class="link-underline text-sm">Về trang chủ</a>
-      <a href="/projects" class="link-underline text-sm">Xem dự án</a>
+      <a href={ROUTES.projects} class="link-underline text-sm">Xem dự án</a>
     </div>
   </section>
 </BaseLayout>

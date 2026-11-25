@@ -1,0 +1,155 @@
+---
+import { TYPE_PARAM } from '@/config/routes';
+import type { TypeCount } from '@/lib/projects';
+
+interface Props {
+  /** Mọi loại hình kèm số dự án — từ countByType(). */
+  types: TypeCount[];
+  total: number;
+  class?: string;
+}
+
+const { types, total, class: className } = Astro.props;
+
+/*
+  Hiện ĐỦ mọi loại hình studio nhận làm, kể cả loại chưa có dự án đăng: khách cần
+  biết studio làm được gì, không chỉ cái gì đã chụp ảnh. Loại có dự án là nút lọc
+  kèm số đếm; loại chưa có chỉ là chữ mờ — không bấm ra lưới trống.
+*/
+const withProjects = types.filter((t) => t.count > 0);
+const withoutProjects = types.filter((t) => t.count === 0);
+---
+
+<div
+  class:list={['type-filter flex items-center gap-x-8 overflow-x-auto px-5 md:px-10', className]}
+  data-type-filter
+  data-param={TYPE_PARAM}
+>
+  <p class="label shrink-0 max-md:hidden">Loại hình</p>
+
+  <ul class="flex items-center gap-x-6 whitespace-nowrap md:flex-wrap md:gap-x-7">
+    <li>
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">
+        Tất cả <sup>{total}</sup>
+      </button>
+    </li>
+    {
+      withProjects.map((type) => (
+        <li>
+          <button type="button" class="chip" data-filter={type.slug} aria-pressed="false">
+            {type.label} <sup>{type.count}</sup>
+          </button>
+        </li>
+      ))
+    }
+    {
+      withoutProjects.map((type) => (
+        <li class="chip chip-off">{type.label}</li>
+      ))
+    }
+  </ul>
+</div>
+
+<p class="label hidden px-5 py-16 md:px-10" data-type-empty>Chưa có dự án trong loại hình này.</p>
+
+<style>
+  .type-filter {
+    scrollbar-width: none;
+  }
+
+  .type-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 44px: ngưỡng vùng chạm tối thiểu. Trạng thái chọn là gạch chân, không phải hộp. */
+  .chip {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    transition: color 0.3s var(--ease-hover);
+  }
+
+  button.chip {
+    cursor: pointer;
+  }
+
+  button.chip:hover,
+  .chip[aria-pressed='true'] {
+    color: var(--color-ink);
+  }
+
+  .chip[aria-pressed='true']::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0.5rem;
+    height: 1px;
+    background-color: currentColor;
+  }
+
+  .chip sup {
+    top: -0.5em;
+    font-size: 0.625rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+  }
+
+  .chip-off {
+    color: color-mix(in oklab, var(--color-muted) 55%, transparent);
+  }
+</style>
+
+<script>
+  function initTypeFilter(): void {
+    const bar = document.querySelector<HTMLElement>('[data-type-filter]');
+    const wall = document.querySelector<HTMLElement>('[data-work-wall]');
+    if (!bar || !wall || bar.dataset.ready) return;
+    bar.dataset.ready = 'true';
+
+    const param = bar.dataset.param ?? 'loai';
+    const buttons = Array.from(bar.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const items = Array.from(wall.querySelectorAll<HTMLElement>('[data-project-type]'));
+    const empty = document.querySelector<HTMLElement>('[data-type-empty]');
+
+    function apply(type: string, updateUrl: boolean): void {
+      let visible = 0;
+
+      items.forEach((item) => {
+        const match = type === 'all' || item.dataset.projectType === type;
+        item.hidden = !match;
+        if (match) visible += 1;
+      });
+
+      buttons.forEach((btn) => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.filter === type));
+      });
+
+      empty?.classList.toggle('hidden', visible > 0);
+      // Lưới bỏ ô lớn 2×2 khi đang lọc — xem WorkWall.
+      wall?.toggleAttribute('data-filtered', type !== 'all');
+
+      if (!updateUrl) return;
+      // replaceState: link đã lọc chia sẻ được, nhưng nút back không phải lùi qua từng lần bấm.
+      const url = new URL(window.location.href);
+      if (type === 'all') url.searchParams.delete(param);
+      else url.searchParams.set(param, type);
+      window.history.replaceState(window.history.state, '', url);
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => apply(btn.dataset.filter ?? 'all', true));
+    });
+
+    // Tôn trọng ?loai= khi vào từ link ngoài (trang dịch vụ, footer).
+    const initial = new URL(window.location.href).searchParams.get(param);
+    if (initial && buttons.some((b) => b.dataset.filter === initial)) apply(initial, false);
+  }
+
+  // Script bị hoist sau khi ClientRouter đã bắn astro:page-load nên phải gọi thẳng một lần.
+  document.addEventListener('astro:page-load', initTypeFilter);
+  initTypeFilter();
+</script>

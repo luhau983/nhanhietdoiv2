@@ -1,28 +1,31 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHead from '@/components/section/PageHead.astro';
 import CtaLink from '@/components/ui/CtaLink.astro';
-import { site } from '@/config/site';
+import { contactChannels, site } from '@/config/site';
+
+const zalo = contactChannels.find((c) => c.id === 'zalo');
 
 const details = [
   { label: 'Điện thoại', value: site.phone, href: `tel:${site.phoneHref}` },
-  { label: 'Zalo', value: site.phone, href: 'https://zalo.me/0964990168' },
+  ...(zalo ? [{ label: 'Zalo', value: site.phone, href: zalo.href }] : []),
   { label: 'Email', value: site.email, href: `mailto:${site.email}` },
   // Chỉ hiện văn phòng khi đã có địa chỉ thật.
-  ...(site.address ? [{ label: 'Văn phòng', value: site.address }] : []),
-  ...site.socials.map((s) => ({ label: s.label, value: 'Xem trang', href: s.href })),
+  ...(site.address ? [{ label: 'Văn phòng', value: site.address, href: undefined }] : []),
+  ...site.socials.map((s) => ({ label: s.label, value: 'Xem trang ↗', href: s.href })),
 ];
 ---
 
 <BaseLayout
   title="Liên hệ"
   description={`Liên hệ ${site.legalName}${site.address ? ` — ${site.address}` : ''}. Email ${site.email}, điện thoại ${site.phone}.`}
+  showFooter={true}
+  showFooterContact={false}
 >
-  <section class="px-5 pt-32 pb-24 md:px-10 md:pt-44 md:pb-36">
-    <h1 class="max-w-[20ch] text-display leading-[0.94] font-light tracking-[-0.02em]">
-      Liên hệ
-    </h1>
+  <PageHead label="Liên hệ" title="Kể cho chúng tôi về mảnh đất của bạn." />
 
-    <dl class="mt-14 max-w-2xl">
+  <section class="px-5 pb-24 md:px-10 md:pb-36">
+    <dl class="max-w-2xl border-t border-line">
       {
         details.map((item) => (
           <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1 border-b border-line py-5">

@@ -1,0 +1,66 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Band from '@/components/section/Band.astro';
+import IndexList from '@/components/section/IndexList.astro';
+import PageHead from '@/components/section/PageHead.astro';
+import ClosingCta from '@/components/section/ClosingCta.astro';
+import { ROUTES, typePath } from '@/config/routes';
+import { PROCESS, SERVICES } from '@/config/services';
+import { site } from '@/config/site';
+import { countByType, getProjects } from '@/lib/projects';
+
+const projects = await getProjects();
+const types = countByType(projects);
+const ctaProject = projects.find((p) => p.data.featured) ?? projects[0];
+
+const services = SERVICES.map((s) => ({
+  id: s.slug,
+  num: s.num,
+  title: s.label,
+  points: s.scope,
+}));
+---
+
+<BaseLayout
+  title="Dịch vụ"
+  description={`${site.name} nhận ${SERVICES.map((s) => s.label.toLowerCase()).join(', ')} cho nhà ở và công trình thương mại.`}
+  showFooterContact={false}
+>
+  <PageHead label="Dịch vụ" title="Từ bản vẽ đầu tiên tới ngày bàn giao." />
+
+  <Band label="Dịch vụ">
+    <IndexList items={services} />
+  </Band>
+
+  <!-- Loại hình: có dự án thì dẫn sang lưới đã lọc, chưa có thì chỉ nêu tên. -->
+  <Band label="Loại hình" tone="deep">
+    <ul class="flex flex-wrap gap-x-10 gap-y-3">
+      {
+        types.map((type) => (
+          <li class="text-title leading-tight font-light tracking-tight">
+            {type.count > 0 ? (
+              <a href={typePath(type.slug)} class="link-underline">
+                {type.label}
+                <sup class="-top-[1.4em] ml-1 text-[0.625rem] tracking-normal text-muted tabular-nums">
+                  {type.count}
+                </sup>
+              </a>
+            ) : (
+              <span class="text-muted">{type.label}</span>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+
+    <a href={ROUTES.projects} class="link-underline mt-8 inline-block text-sm">
+      Tất cả {projects.length} dự án →
+    </a>
+  </Band>
+
+  <Band label="Quy trình" id="quy-trinh">
+    <IndexList items={PROCESS} />
+  </Band>
+
+  <ClosingCta image={ctaProject?.data.cover} />
+</BaseLayout>

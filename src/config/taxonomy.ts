@@ -30,14 +30,6 @@ export function typeLabel(slug: ProjectTypeSlug): string {
   return TYPE_LABELS[slug];
 }
 
-/** Dịch vụ studio nhận làm — theo trang /dich-vu/ của website cũ. */
-export const SERVICES = [
-  { slug: 'thiet-ke-kien-truc', label: 'Thiết kế kiến trúc' },
-  { slug: 'thiet-ke-noi-that', label: 'Thiết kế nội thất' },
-  { slug: 'thiet-ke-landscape', label: 'Thiết kế landscape' },
-  { slug: 'thi-cong-xay-dung', label: 'Thi công xây dựng' },
-] as const;
-
 /**
  * Nhóm ảnh trong gallery của một dự án — mỗi nhóm là một tab.
  *
@@ -75,7 +67,7 @@ export const GALLERY_KIND_SLUGS = GALLERY_KINDS.map((k) => k.slug) as unknown as
 export const GALLERY_LAYOUTS = [
   {
     slug: 'o-vuong',
-    label: 'Lưới ô vuông',
+    label: 'Lưới đều',
     sizes: '(min-width: 1024px) 25vw, (min-width: 768px) 33.33vw, 50vw',
   },
   {

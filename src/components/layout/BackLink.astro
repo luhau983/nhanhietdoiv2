@@ -27,7 +27,7 @@ const { href, label = 'Quay lại', class: className } = Astro.props;
 <script>
   /*
     Vì sao ưu tiên history.back() thay vì cứ đi thẳng tới href: người xem bấm vào ô
-    thứ 9 của lưới rồi muốn ra, đi tới /projects sẽ ném họ về đầu trang và phải cuộn
+    thứ 9 của lưới rồi muốn ra, đi tới /du-an sẽ ném họ về đầu trang và phải cuộn
     lại từ đầu. Quay lui thì ClientRouter khôi phục đúng vị trí cuộn cũ.
 
     Nhưng chỉ quay lui khi mục lịch sử phía trước thật sự là của site này — vào

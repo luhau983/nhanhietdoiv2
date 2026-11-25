@@ -1,0 +1,50 @@
+---
+/**
+ * Danh sách đánh số kiểu mục lục: số — tên — diễn giải ngắn, ngăn bằng nét mảnh.
+ * Dùng cho dịch vụ, quy trình, giá trị: cùng loại nội dung thì cùng một hình dạng.
+ */
+interface Item {
+  num: string;
+  title: string;
+  /** Một câu diễn giải. */
+  body?: string;
+  /** Hoặc vài cụm từ ngắn, mỗi cụm một dòng. */
+  points?: readonly string[];
+  /** Neo riêng của dòng (/dich-vu#thiet-ke-noi-that). */
+  id?: string;
+}
+
+interface Props {
+  items: readonly Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<ol class="border-t border-line">
+  {
+    items.map((item) => (
+      <li
+        id={item.id}
+        class="grid scroll-mt-[calc(var(--header-h)+1rem)] grid-cols-[2rem_minmax(0,1fr)] gap-x-4 gap-y-2 border-b border-line py-6 md:grid-cols-[3.5rem_minmax(0,1fr)_minmax(0,1.2fr)] md:gap-x-10 md:py-8"
+      >
+        <span class="label pt-2 tabular-nums">{item.num}</span>
+        <h3 class="text-title leading-[1.15] font-light tracking-tight">{item.title}</h3>
+
+        {item.body && (
+          <p class="col-start-2 max-w-[52ch] text-[0.9375rem] text-ink-soft md:col-start-3 md:pt-1.5">
+            {item.body}
+          </p>
+        )}
+
+        {item.points && (
+          <ul class="col-start-2 space-y-1 text-[0.9375rem] text-ink-soft md:col-start-3 md:pt-1.5">
+            {item.points.map((point) => (
+              <li>{point}</li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))
+  }
+</ol>

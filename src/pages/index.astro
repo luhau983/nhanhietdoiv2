@@ -1,104 +1,61 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Intro from '@/components/home/Intro.astro';
+import TypeFilter from '@/components/project/TypeFilter.astro';
 import WorkWall from '@/components/project/WorkWall.astro';
-import Press from '@/components/layout/Press.astro';
-import Hero from '@/components/layout/Hero.astro';
-import Values from '@/components/home/Values.astro';
-import Process from '@/components/home/Process.astro';
-import WhyUs from '@/components/home/WhyUs.astro';
-import ClosingCta from '@/components/home/ClosingCta.astro';
-import { site } from '@/config/site';
+import Band from '@/components/section/Band.astro';
+import Press from '@/components/section/Press.astro';
+import ClosingCta from '@/components/section/ClosingCta.astro';
+import { ROUTES } from '@/config/routes';
+import { PROCESS, PROCESS_BY_PHASE } from '@/config/services';
+import { countByType, getProjects } from '@/lib/projects';
 
-const all = (await getCollection('projects', ({ data }) => !data.draft)).sort(
-  (a, b) => a.data.order - b.data.order || b.data.year - a.data.year,
-);
+/*
+  Trang chủ là nơi XEM NHÀ: các ô công trình chiếm màn hình đầu.
+    1. Làm dịch vụ gì?    → Intro: một hàng mảnh 4 dịch vụ sát header.
+    2. Làm công trình gì?  → Thanh loại hình + lưới ô nhà (ô đầu lớn 2×2).
+    3. Làm thế nào, ai nói? → Quy trình 4 giai đoạn, báo chí, lời mời.
+*/
+const all = await getProjects();
 
-// Giới hạn để trang chủ không nhân bản y nguyên /projects (trùng nội dung, hại SEO).
-const WALL_LIMIT = 35;
+// Trần để trang chủ không phình vô hạn; 23 + ô chốt = 24, chia hết cho 2/3/4 cột.
+const WALL_LIMIT = 23;
 const wall = all.slice(0, WALL_LIMIT);
 const hasMore = all.length > wall.length;
 
-/*
-  Ô chốt cuối lưới luôn hiện, không phụ thuộc hasMore.
-
-  Lý do: lưới chạy 2 / 3 / 4 / 6 cột nên số ô lẻ để lại một lỗ trống ở hàng cuối tại
-  mọi breakpoint. Ô chốt vừa lấp lỗ đó vừa cho lưới một điểm dừng. Với 11 dự án hiện
-  tại thì 11 + 1 = 12, chia hết cho cả 2, 3, 4 và 6.
-
-  Khi đã cắt bớt thì chốt bằng đường sang danh mục đầy đủ; khi trang chủ vốn đã hiện
-  hết thì link sang /projects là thừa, chuyển thành lối liên hệ.
-*/
-const moreHref = hasMore ? '/projects' : '/contact';
-const moreLabel = hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu dự án của bạn';
-
-/*
-  Ảnh nền ô chốt trang lấy từ dự án featured đầu tiên.
-
-  Lấy lại ảnh đã có thay vì thêm asset mới: band này chỉ cần một mặt phẳng tối để chữ
-  trắng đứng lên, mà cover của dự án nổi bật thì luôn là ảnh studio tự chọn là đẹp
-  nhất. Ngã về dự án đầu danh sách khi chưa có dự án nào đánh featured.
-*/
 const ctaProject = all.find((p) => p.data.featured) ?? all[0];
 ---
 
-<!-- showFooterContact={false}: band CTA ở cuối trang đã là lời mời liên hệ, footer chỉ
-     còn dòng bản quyền. Các trang khác vẫn giữ khối liên hệ ở chân trang. -->
 <BaseLayout showFooterContact={false}>
-  <!--
-    Hero nằm TRONG lưới, là ô đầu tràn hết một hàng — không còn là section riêng.
+  <Intro />
 
-    Hero rời trước đây cao 74svh, tức 601/812px trên điện thoại, nên vào trang chỉ
-    thấy hai ô dự án ló ở mép dưới; tiêu chí "vô web là biết ngay có dự án gì" hỏng
-    ngay ở màn đầu. Gộp vào lưới thì màn đầu 375×812 hiện một ảnh lớn + 5 dự án,
-    màn 1440×900 hiện ảnh lớn + trọn hàng 6 ô.
-
-    Tỉ lệ đổi theo khổ chứ không dùng svh: 4:3 ở điện thoại, 16:9 ở tablet, 3:1 ở
-    desktop. Chiều cao khi đó bám theo chiều rộng lưới nên ô hero và ô dự án luôn
-    cùng một hệ, không có ô nào bị svh kéo lệch khỏi nhịp.
-
-    Bỏ nút "11 dự án ↓": lưới đã nằm ngay dưới ảnh, không còn gì để dẫn xuống.
-  -->
-  <section id="work">
-    <WorkWall projects={wall} moreHref={moreHref} moreLabel={moreLabel}>
-      <div
-        slot="lead"
-        data-skeleton="dark"
-        class="relative aspect-[4/3] overflow-hidden bg-ink sm:aspect-[16/9] lg:aspect-[3/1]"
-      >
-        <div class="absolute inset-x-0 -top-[7%] h-[114%]">
-          <Hero alt={`Công trình tiêu biểu của ${site.name}`} />
-        </div>
-
-        <div
-          class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/25"
-          aria-hidden="true"
-        >
-        </div>
-
-        <div class="absolute inset-x-0 bottom-0 p-4 text-white md:p-5 lg:p-10">
-          <h1 class="text-display leading-[0.9] font-light tracking-[-0.02em]">{site.name}</h1>
-
-          <!-- text-balance: ở 375px dòng này vắt sang dòng hai đúng một chữ "Nai". -->
-          <p
-            class="mt-2 max-w-[34ch] text-sm leading-snug text-balance text-white/85 md:max-w-[54ch] md:text-[1.125rem]"
-          >
-            {site.positioning} — {site.city}
-          </p>
-        </div>
-      </div>
-    </WorkWall>
+  <section id="du-an" aria-label="Dự án" class="pb-16 md:pb-24">
+    <TypeFilter types={countByType(wall)} total={wall.length} class="py-2 md:py-3" />
+    <WorkWall
+      projects={wall}
+      feature
+      moreHref={hasMore ? ROUTES.projects : ROUTES.contact}
+      moreLabel={hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu dự án của bạn'}
+    />
   </section>
 
-  <Press />
+  <Band label="Quy trình">
+    <ol class="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+      {
+        PROCESS_BY_PHASE.map((phase) => (
+          <li class="bg-paper py-5 sm:px-5 lg:first:pl-0">
+            <span class="label tabular-nums">{phase.range}</span>
+            <p class="mt-3 text-title leading-tight font-light tracking-tight">{phase.label}</p>
+          </li>
+        ))
+      }
+    </ol>
 
-  <!--
-    Mạch cuối trang: tuyên bố (Giá trị) → cách làm (Quy trình) → bằng chứng (Vì sao
-    chọn) → lời mời (ô chốt). Bốn band này thay cho một section hai link nhỏ trước đây,
-    và cố ý KHÔNG lặp nội dung /about: /about nói về văn phòng, nhóm và hạng mục.
-  -->
-  <Values />
-  <Process />
-  <WhyUs projectCount={all.length} />
+    <a href={`${ROUTES.services}#quy-trinh`} class="link-underline mt-8 inline-block text-sm">
+      {PROCESS.length} bước chi tiết →
+    </a>
+  </Band>
+
+  <Press />
   <ClosingCta image={ctaProject?.data.cover} />
 </BaseLayout>

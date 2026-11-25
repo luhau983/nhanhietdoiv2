@@ -10,7 +10,7 @@ Thay thế website WordPress cũ tại [nhanhietdoi.vn](https://nhanhietdoi.vn).
 | CSS | Tailwind 4 (`@tailwindcss/vite`) | Token khai báo trong `src/styles/global.css` qua `@theme` |
 | Nội dung | Content Collections + MDX + zod | Thêm dự án = thêm 1 file `.mdx`; sai schema thì build fail, không ra site lỗi |
 | Ảnh | `astro:assets` + sharp | Tối ưu lúc build, xuất WebP + `srcset`; không cần server xử lý ảnh |
-| Motion | Lenis + GSAP ScrollTrigger | GSAP chỉ tải ở trang có `[data-parallax]` |
+| Motion | Lenis + CSS scroll-driven animation | Parallax thuần CSS (`[data-parallax]` trong global.css), không GSAP |
 | Font | Be Vietnam Pro (self-host) | Có đủ dấu tiếng Việt — nhiều font display thì không |
 
 ## Lệnh
@@ -33,7 +33,7 @@ npm run check
 2. Bỏ ảnh vào `src/assets/projects/<slug>/`
 3. Điền frontmatter theo schema trong [src/content.config.ts](src/content.config.ts)
 
-`slug` của file chính là URL: `src/content/projects/nha-pho-bien-hoa.mdx` → `/projects/nha-pho-bien-hoa`.
+`slug` của file chính là URL: `src/content/projects/nha-pho-bien-hoa.mdx` → `/du-an/nha-pho-bien-hoa`.
 
 Trường bắt buộc: `title`, `excerpt` (20–220 ký tự), `year`, `location`, `type`, `cover`.
 `type` phải là một slug trong [src/config/taxonomy.ts](src/config/taxonomy.ts).
@@ -43,18 +43,22 @@ Trường bắt buộc: `title`, `excerpt` (20–220 ký tự), `year`, `locatio
 ## Kiến trúc trang
 
 - **Trang chủ** — hero một ảnh + lưới dự án 6 cột tràn viền. Ảnh trả lời "studio này làm kiến trúc gì", chữ giữ ở mức tối thiểu. Hover mỗi ô ra tên dự án, hạng mục, năm và link.
-- **`/projects`** — lưới đầy đủ + lọc theo hạng mục ở phía client (`?type=` chia sẻ được).
-- **`/projects/<slug>`** — hero ảnh cover, bảng thông số, nội dung MDX, gallery, điều hướng dự án trước/sau.
-- **`/about`, `/contact`** — dịch vụ, hạng mục, quy trình, thông tin liên hệ.
-- **Báo chí** — hai bài VnExpress, khai báo ở [src/config/press.ts](src/config/press.ts), hiện ở trang chủ và `/about`. Chỉ lưu tiêu đề + link + ngày; không sao chép nội dung hay hotlink ảnh của báo.
+- **`/`** — nơi xem nhà: một hàng mảnh 4 dịch vụ (link sang `/dich-vu#<slug>`), thanh loại hình, rồi lưới ô công trình với ô đầu lớn 2×2. Không có ảnh hero.
+- **`/du-an`** — lưới đầy đủ + lọc theo loại hình ở phía client (`?loai=` chia sẻ được). Thanh lọc ([TypeFilter.astro](src/components/project/TypeFilter.astro)) hiện đủ 8 loại hình, loại chưa có dự án chỉ là chữ mờ.
+- **`/du-an/<slug>`** — tên + 3 thông số chính, ảnh cover, gallery (lưới 4:3 có khoảng cách, 3 cách xem, lightbox), mô tả + bảng thông số, dự án trước/sau.
+- **`/dich-vu`** — 4 dịch vụ kèm phạm vi, loại hình, quy trình 8 bước ([src/config/services.ts](src/config/services.ts)).
+- **`/gioi-thieu`, `/lien-he`** — giá trị, nhóm, báo chí; thông tin liên hệ.
+
+Slug route khai báo một chỗ ở [src/config/routes.ts](src/config/routes.ts), trùng slug website WordPress cũ. Thứ tự và cách đếm dự án nằm ở [src/lib/projects.ts](src/lib/projects.ts). Mọi band nội dung dùng chung khung [Band.astro](src/components/section/Band.astro) + [IndexList.astro](src/components/section/IndexList.astro).
+- **Báo chí** — hai bài VnExpress, khai báo ở [src/config/press.ts](src/config/press.ts), hiện ở trang chủ và `/gioi-thieu`. Chỉ lưu tiêu đề + link + ngày; không sao chép nội dung hay hotlink ảnh của báo.
 
 Hai nút nổi góc phải: nút liên hệ (hover mở trên desktop, bấm để mở/đóng trên mọi thiết bị, bấm đóng thì chặn hover mở lại tới khi chuột rời đi) và nút về đầu trang.
 
-Header có hai trạng thái do [Motion.astro](src/components/motion/Motion.astro) điều khiển: trong suốt + chữ trắng khi nằm trên hero, nền giấy + chữ mực khi đã cuộn qua. Không dùng `mix-blend-difference` — header phải có `z-index`, mà `z-index` tạo stacking context nên blend bị cô lập và chữ trắng mất tương phản trên nền sáng.
+Header một trạng thái: nền giấy mờ, chữ mực. Nền mờ (`backdrop-blur`) đặt trên `.nav-bar` chứ không trên `<header>` — backdrop-filter biến phần tử thành containing block của con `position: fixed`, đặt sai chỗ là lớp phủ menu mobile co lại bằng chiều cao header. Chiều cao header là biến `--header-h` trong global.css.
 
 ## Mobile
 
-- Hero dùng art direction thật qua `<picture>` trong [Hero.astro](src/components/layout/Hero.astro): điện thoại tải ảnh dọc, desktop tải ảnh ngang. Nhồi một ảnh cho cả hai khung là lý do hero từng trông "quá lớn" — ảnh dọc trong khung ngang bị cắt mất 65% chiều cao.
+- Ảnh LCP của trang chủ là ô công trình đầu tiên trong [WorkWall.astro](src/components/project/WorkWall.astro) (`fetchpriority="high"`, `sizes` 50vw ở desktop).
 - Chiều cao hero `74svh` trên mobile, `88svh` trên desktop. Dùng `svh` chứ không `vh` để thanh địa chỉ của browser mobile không làm nhảy layout. Hero thấp hơn một màn hình để lưới dự án hé lên, cho thấy còn nội dung bên dưới.
 - Vùng chạm tối thiểu 44px: nút Menu, nút Đóng, chip lọc hạng mục, hai nút nổi.
 - Nhãn trên ô lưới `line-clamp-2` để tên dự án dài không đẩy nhãn hạng mục tràn khỏi ô 187px.
@@ -62,7 +66,7 @@ Header có hai trạng thái do [Motion.astro](src/components/motion/Motion.astr
 
 ## Hai bẫy đã gặp, đừng lặp lại
 
-**Script của component chạy sau `astro:page-load`.** Astro hoist script xuống, nên script đăng ký `document.addEventListener('astro:page-load', init)` ở component trong `<body>` sẽ không bao giờ khởi tạo ở lần tải đầu — ClientRouter nằm trong `<head>` đã bắn event trước đó. Cách xử lý trong repo: uỷ quyền sự kiện ở cấp module (ContactButtons, BackToTop) hoặc gọi thẳng `init()` kèm cờ chống gắn hai lần (`/projects`).
+**Script của component chạy sau `astro:page-load`.** Astro hoist script xuống, nên script đăng ký `document.addEventListener('astro:page-load', init)` ở component trong `<body>` sẽ không bao giờ khởi tạo ở lần tải đầu — ClientRouter nằm trong `<head>` đã bắn event trước đó. Cách xử lý trong repo: uỷ quyền sự kiện ở cấp module (ContactButtons, BackToTop) hoặc gọi thẳng `init()` kèm cờ chống gắn hai lần (TypeFilter).
 
 **Biến thể `peer-*`/`group-*` của Tailwind 4 không cộng specificity.** Chúng được bọc trong `:where()`, nên `peer-checked:visible` hoà 0,1,0 với `invisible` rồi thua theo thứ tự khai báo. Trạng thái hiện/ẩn nào quan trọng thì viết selector trong `<style>` của component.
 
@@ -88,10 +92,10 @@ Chưa có, phải bổ sung trước khi lên production:
    - *Nhà vườn 80 m²* — Đồng Nai (bài VnExpress 18.07.2025)
    - *Nhà nghỉ dưỡng 500 m²* — Đồng Nai (bài VnExpress 28.07.2025)
 
-   Tên nhóm thiết kế trong hai bài báo (Đỗ Đình Mạnh, Nguyễn Thái Hoàng) đã đưa vào trang `/about`; vai trò cụ thể của từng người thì cần studio xác nhận.
+   Tên nhóm thiết kế trong hai bài báo (Đỗ Đình Mạnh, Nguyễn Thái Hoàng) đã đưa vào trang `/gioi-thieu`; vai trò cụ thể của từng người thì cần studio xác nhận.
 2. **Hạng mục cần xác nhận.** 4 dự án đoán được từ tên file (VINHOME → căn hộ, `thiet-ke-biet-thu-tai-binh-duong` → biệt thự, `PHONG-TU-VAN`/`SANH-CS` → spa), 7 dự án còn lại đang mặc định `nha-pho`.
 3. **Địa chỉ văn phòng.** `site.address` đang rỗng — trang chủ cũ không ghi ở đâu. Địa chỉ trống làm hỏng structured data cho tìm kiếm địa phương.
-4. **`site` trong `astro.config.mjs`** đang là `https://studio07.vn`, đổi thành domain thật (sitemap và canonical URL dựa vào đây).
+4. **`site` trong `astro.config.mjs`** đang là `https://nhanhietdoi.vn` — xác nhận đúng domain production (sitemap và canonical URL dựa vào đây).
 
 ## Ảnh và dung lượng build
 
@@ -101,7 +105,7 @@ Chưa có, phải bổ sung trước khi lên production:
 
 Hiện tại `dist/` khoảng 54 MB cho 16 trang (trước khi nén và dọn là 111 MB).
 
-`og:image` sinh riêng bản cắt 1200×630 ở [projects/[slug].astro](src/pages/projects/[slug].astro) — không dùng thẳng ảnh cover, vì ảnh gốc sai tỉ lệ nên Facebook/Zalo tự cắt lung tung.
+`og:image` sinh riêng bản cắt 1200×630 ở [du-an/[slug].astro](src/pages/du-an/[slug].astro) — không dùng thẳng ảnh cover, vì ảnh gốc sai tỉ lệ nên Facebook/Zalo tự cắt lung tung.
 
 ## Deploy
 

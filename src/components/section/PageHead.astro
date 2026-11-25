@@ -1,0 +1,17 @@
+---
+/** Đầu trang con: nhãn nhỏ + một dòng tiêu đề lớn. Chừa sẵn chỗ cho header cố định. */
+interface Props {
+  label: string;
+  title: string;
+}
+
+const { label, title } = Astro.props;
+---
+
+<header class="px-5 pt-[calc(var(--header-h)+3.5rem)] pb-12 md:px-10 md:pt-[calc(var(--header-h)+6rem)] md:pb-20">
+  <p class="label">{label}</p>
+  <h1 class="mt-5 max-w-[20ch] text-display leading-[0.98] font-light tracking-[-0.025em] text-balance">
+    {title}
+  </h1>
+  <slot />
+</header>

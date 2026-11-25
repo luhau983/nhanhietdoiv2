@@ -1,0 +1,33 @@
+---
+/**
+ * Khung chung cho mọi band nội dung: nhãn bên trái (3/12), nội dung bên phải (9/12).
+ * Một khung duy nhất để cả site chung một trục canh lề và một nhịp khoảng cách.
+ */
+interface Props {
+  label: string;
+  /** Neo cho link từ trang khác (/dich-vu#quy-trinh). */
+  id?: string;
+  tone?: 'paper' | 'deep';
+}
+
+const { label, id, tone = 'paper' } = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={[
+    'scroll-mt-[var(--header-h)] border-t border-line px-5 py-14 md:px-10 md:py-20',
+    tone === 'deep' && 'bg-paper-deep',
+  ]}
+>
+  <div class="grid gap-8 lg:grid-cols-12 lg:gap-10">
+    <div class="lg:col-span-3">
+      <h2 class="label">{label}</h2>
+      <slot name="aside" />
+    </div>
+
+    <div class="lg:col-span-9">
+      <slot />
+    </div>
+  </div>
+</section>

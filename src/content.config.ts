@@ -14,10 +14,11 @@ const projects = defineCollection({
       title: z.string().min(1),
 
       // Tóm tắt 1–2 câu, dùng cho meta description và card. Giới hạn để không tràn layout.
-      excerpt: z.string().min(20).max(220),
+      // Chưa có thì bỏ trống — giao diện tự ẩn, không hiện chữ giữ chỗ.
+      excerpt: z.string().min(20).max(220).optional(),
 
       year: z.number().int().min(1990).max(2100),
-      location: z.string().min(1),
+      location: z.string().min(1).optional(),
       type: z.enum(PROJECT_TYPE_SLUGS),
       status: z.enum(PROJECT_STATUSES).default('hoan-thanh'),
 

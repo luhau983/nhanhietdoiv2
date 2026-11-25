@@ -246,10 +246,7 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
                     data-full={full}
                     data-caption={item.caption ?? ''}
                     data-skeleton
-                    class:list={[
-                      'tile group relative block w-full cursor-zoom-in overflow-hidden bg-paper-deep',
-                      item.wide ? 'aspect-[2/1]' : 'aspect-square',
-                    ]}
+                    class="tile group relative block w-full cursor-zoom-in overflow-hidden bg-paper-deep"
                   >
                     <Image
                       src={item.src}
@@ -261,7 +258,7 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
                       decoding="async"
                       data-img-fade
                       {...sizesAttrs(item.wide)}
-                      class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.04]"
+                      class="tile-media h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-hover)] group-hover:scale-[1.03]"
                     />
                   </button>
                 </li>
@@ -326,18 +323,47 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     tranh nhau và phải đè bằng !important.
   */
 
-  /* ── Lưới ô vuông (mặc định) ─────────────────────────────────────
-     Kẻ hairline bằng gap-px + nền line của thẻ cha: rẻ hơn border trên từng ô vì không
-     nhân đôi đường kẻ ở chỗ hai ô giáp nhau. */
+  /*
+    Khoảng cách và lề dùng chung cho cả ba cách xem — cùng nhịp với lưới dự án ở trang
+    chủ (WorkWall). Lề đặt trên chính .tile-grid chứ không trên khối bọc: JS đo
+    offsetHeight của khối bọc để chuyển chiều cao khi đổi tab, lề phải nằm trong số đo đó.
+  */
+  .tile-grid {
+    --gap: 0.75rem;
+    padding: 1.25rem 1.25rem 0;
+  }
+
+  @media (min-width: 768px) {
+    .tile-grid {
+      --gap: 1.25rem;
+      padding: 2rem 2.5rem 0;
+    }
+  }
+
+  /* ── Lưới đều (mặc định) ─────────────────────────────────────────
+     Ô 4:3 — khổ ngang của ảnh kiến trúc, không cắt vuông. */
   [data-layout='o-vuong'] .tile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    background-color: var(--color-line);
+    gap: var(--gap);
+  }
+
+  /* li là grid để nút bên trong giãn theo chiều cao hàng: ô wide (2 cột) cao hơn ô
+     thường đúng 0.375 × gap, giãn ra thì cả hàng vẫn bằng đáy. */
+  [data-layout='o-vuong'] .tile-grid > li {
+    display: grid;
+  }
+
+  [data-layout='o-vuong'] .tile {
+    aspect-ratio: 4 / 3;
   }
 
   [data-layout='o-vuong'] .tile-grid > li[data-wide] {
     grid-column: span 2;
+  }
+
+  [data-layout='o-vuong'] li[data-wide] .tile {
+    aspect-ratio: 8 / 3;
   }
 
   @media (min-width: 768px) {
@@ -364,13 +390,13 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
      border từng ô thì mép dưới các cột lệch nhau nên đường kẻ hoá ra vụn. */
   [data-layout='ti-le'] .tile-grid {
     columns: 2;
-    column-gap: 1px;
+    column-gap: var(--gap);
   }
 
   [data-layout='ti-le'] .tile-grid > li {
     /* Chặn trình duyệt cắt một ô làm hai nửa ở hai cột. */
     break-inside: avoid;
-    margin-bottom: 1px;
+    margin-bottom: var(--gap);
   }
 
   @media (min-width: 768px) {
@@ -389,13 +415,13 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
   [data-layout='mot-cot'] .tile-grid {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: var(--gap);
   }
 
   /*
     Hai cách xem giữ tỉ lệ: bỏ khung cố định để ảnh cao theo đúng tỉ lệ gốc của nó.
 
-    Độ đặc hiệu (0,2,0) nên thắng aspect-square / h-full của Tailwind (0,1,0) mà không cần
+    Độ đặc hiệu (0,2,0) nên thắng h-full của Tailwind (0,1,0) mà không cần
     !important. Chiều cao vẫn biết trước lúc chưa tải xong vì thẻ img có width/height thật
     do Astro sinh ra — nên không có CLS, và skeleton vẫn có khung để quét.
   */

@@ -1,0 +1,43 @@
+---
+import { servicePath } from '@/config/routes';
+import { SERVICES } from '@/config/services';
+import { site } from '@/config/site';
+
+/*
+  Dải mở đầu trang chủ: một dòng định danh + bốn dịch vụ thành một hàng mảnh.
+
+  Cố ý KHÔNG có ảnh hero: trang chủ là nơi xem nhà, nên thứ chiếm màn hình đầu phải
+  là các ô công trình ngay bên dưới. Dịch vụ chỉ cần đọc được trong một lần liếc và
+  bấm được — chi tiết nằm ở /dich-vu.
+*/
+---
+
+<section class="pt-[var(--header-h)]" aria-label="Giới thiệu">
+  <h1 class="label px-5 py-4 md:px-10 md:py-5">
+    {site.legalName} <span class="text-muted/70">— {site.city}, từ {site.foundedYear}</span>
+  </h1>
+
+  <nav aria-label="Dịch vụ" class="border-y border-line">
+    <ol class="grid grid-cols-2 gap-px bg-line lg:grid-cols-4">
+      {
+        SERVICES.map((service) => (
+          <li class="bg-paper">
+            <a
+              href={servicePath(service.slug)}
+              class="group flex h-full items-baseline gap-2.5 px-5 py-3.5 transition-colors duration-300 hover:bg-paper-deep md:gap-3 md:px-10 md:py-5"
+            >
+              <span class="label tabular-nums">{service.num}</span>
+              <span class="text-sm leading-tight md:text-lead">{service.label}</span>
+              <span
+                class="ml-auto text-muted transition-[transform,color] duration-500 ease-[var(--ease-hover)] group-hover:translate-x-1 group-hover:text-ink max-md:hidden"
+                aria-hidden="true"
+              >
+                →
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
+</section>

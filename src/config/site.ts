@@ -1,3 +1,5 @@
+import { ROUTES } from './routes';
+
 /**
  * Nguồn sự thật duy nhất cho thông tin studio.
  * Dữ liệu lấy từ website cũ nhanhietdoi.vn (trang chủ — các trang con đã 404).
@@ -33,9 +35,10 @@ export const site = {
   ],
 
   nav: [
-    { label: 'Dự án', href: '/projects' },
-    { label: 'Về studio', href: '/about' },
-    { label: 'Liên hệ', href: '/contact' },
+    { label: 'Dự án', href: ROUTES.projects },
+    { label: 'Dịch vụ', href: ROUTES.services },
+    { label: 'Studio', href: ROUTES.studio },
+    { label: 'Liên hệ', href: ROUTES.contact },
   ],
 } as const;
 
