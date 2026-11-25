@@ -16,13 +16,13 @@ const projects = await getProjects();
   <!-- Thanh lọc là toàn bộ phần chữ của trang. Còn lại để ảnh nói. -->
   <h1 class="sr-only">Dự án</h1>
 
-  <TypeFilter
-    types={countByType(projects)}
-    total={projects.length}
-    class="pt-[calc(var(--header-h)+1.5rem)] pb-3 md:pt-[calc(var(--header-h)+2.5rem)] md:pb-5"
-  />
+  <!-- Khoảng chừa header nằm ở div riêng: thanh lọc dính (sticky) trên điện thoại, nếu
+       mang cả padding này thì lúc dính nó cao gấp đôi. -->
+  <div class="h-[var(--header-h)] md:h-[calc(var(--header-h)+2rem)]"></div>
 
-  <div class="pb-16 md:pb-24">
+  <TypeFilter types={countByType(projects)} total={projects.length} class="md:pb-4" />
+
+  <div class="pt-4 pb-16 md:pt-0 md:pb-24">
     <WorkWall projects={projects} moreHref={ROUTES.contact} moreLabel="Bắt đầu dự án của bạn" />
   </div>
 </BaseLayout>

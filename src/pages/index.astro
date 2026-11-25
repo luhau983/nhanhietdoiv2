@@ -30,7 +30,8 @@ const ctaProject = all.find((p) => p.data.featured) ?? all[0];
   <Intro />
 
   <section id="du-an" aria-label="Dự án" class="pb-16 md:pb-24">
-    <TypeFilter types={countByType(wall)} total={wall.length} class="py-2 md:py-3" />
+    <TypeFilter types={countByType(wall)} total={wall.length} class="md:py-3" />
+    <div class="h-4 md:hidden"></div>
     <WorkWall
       projects={wall}
       feature

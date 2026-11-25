@@ -60,6 +60,14 @@
     }
   }
 
+  /* Điện thoại có thanh liên hệ cố định ở đáy (ContactButtons) — chừa chỗ để nó
+     không che dòng cuối của footer. */
+  @media (max-width: 767.98px) {
+    body {
+      padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
   html {
     /* Lenis điều khiển scroll; tắt smooth native để hai cơ chế không đánh nhau. */
     scroll-behavior: auto;

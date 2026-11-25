@@ -145,7 +145,7 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
                 tabindex={isActive ? 0 : -1}
                 disabled={group.items.length === 0}
                 data-gallery-tab={group.slug}
-                class="label -mb-px border-b border-transparent py-4 transition-colors duration-500 ease-[var(--ease-hover)] aria-selected:border-ink aria-selected:text-ink enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+                class="label -mb-px border-b border-transparent py-4 transition-colors duration-500 ease-[var(--ease-hover)] aria-selected:border-ink aria-selected:text-ink enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-35 max-sm:disabled:hidden"
               >
                 {group.label}
                 {/* Mờ hơn nhãn: nhãn "Ảnh 3D" vốn đã kết thúc bằng chữ số, để số
@@ -176,8 +176,8 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
             Nhãn ẩn dưới sm: ở 375px thì ba tab cộng nhãn cộng ba icon là tràn sang hàng thứ
             hai, mà hàng điều khiển hai dòng thì cao gần bằng một ô ảnh.
           */}
-          <div class="flex items-stretch gap-3">
-            <span class="label self-center hidden sm:inline" aria-hidden="true">Cách xem</span>
+          <div class="flex items-stretch gap-3 max-sm:hidden">
+            <span class="label self-center" aria-hidden="true">Cách xem</span>
 
             <div class="flex items-stretch" role="radiogroup" aria-label="Cách xem lưới ảnh">
               {GALLERY_LAYOUTS.map((layout) => {
@@ -489,6 +489,11 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     thường sẽ đẩy phần tràn ra đều hai bên và không cuộn tới được mép trái/trên.
     `safe center` tự lùi về start đúng lúc đó.
   */
+  /* Chưa phóng to thì giữ cử chỉ ngang cho việc vuốt chuyển ảnh (script bên dưới). */
+  .lightbox-stage:not([data-zoomed]) {
+    touch-action: pan-y pinch-zoom;
+  }
+
   .lightbox-stage {
     display: grid;
     place-items: safe center;
@@ -1098,4 +1103,44 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
 
   document.addEventListener('astro:after-swap', restoreLayout);
   restoreLayout();
+
+  /*
+    Vuốt ngang trên cảm ứng để chuyển ảnh — cách xem ảnh mặc định trên điện thoại.
+
+    Hai nút mũi tên vẫn còn, nhưng chúng nằm sát mép và nhỏ so với ngón cái; phần lớn
+    người xem bằng điện thoại sẽ vuốt trước khi tìm nút. Đi qua đúng hai nút đó (click)
+    để chỉ có một đường đổi ảnh, không nhân đôi logic chỉ số.
+
+    Bỏ qua khi đang phóng to: lúc đó kéo ngang là di ảnh.
+  */
+  let swipeId = -1;
+  let swipeX = 0;
+  let swipeY = 0;
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!isOpen || event.pointerType === 'mouse') return;
+    if (stage()?.hasAttribute('data-zoomed')) return;
+
+    swipeId = event.pointerId;
+    swipeX = event.clientX;
+    swipeY = event.clientY;
+  });
+
+  document.addEventListener('pointerup', (event) => {
+    if (event.pointerId !== swipeId) return;
+    swipeId = -1;
+
+    const dx = event.clientX - swipeX;
+    const dy = event.clientY - swipeY;
+    // 48px và ngang gấp rưỡi dọc: đủ để không nhầm một cú chạm hay cú cuộn chéo.
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    document
+      .querySelector<HTMLButtonElement>(`[data-lightbox] [data-lightbox-step="${dx < 0 ? 1 : -1}"]`)
+      ?.click();
+  });
+
+  document.addEventListener('pointercancel', (event) => {
+    if (event.pointerId === swipeId) swipeId = -1;
+  });
 </script>

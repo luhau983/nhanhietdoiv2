@@ -5,6 +5,10 @@ import { contactChannels } from '@/config/site';
 function isExternal(href: string) {
   return href.startsWith('http');
 }
+
+// Thanh đáy trên điện thoại: ba kênh bấm một phát là nói chuyện được ngay.
+const BAR_IDS = ['phone', 'zalo', 'messenger'];
+const barChannels = contactChannels.filter((c) => BAR_IDS.includes(c.id));
 ---
 
 <!--
@@ -24,7 +28,30 @@ function isExternal(href: string) {
   — nên nó phủ trọn 56/56px bề ngang của nút về đầu trang và ăn hết click ở đó. Bấm vào nút
   ấy không có gì xảy ra: elementFromPoint tại tâm nút trả về chính div này.
 -->
-<div class="contact-fab fixed right-4 bottom-4 z-40 flex flex-col items-end md:right-6 md:bottom-6">
+<!--
+  Điện thoại: thanh cố định ở đáy thay cho nút tròn. Khách xem bằng điện thoại và chỉ
+  lướt vài giây — gọi/nhắn phải là MỘT lần chạm ở đúng tầm ngón cái, không phải mở
+  nút rồi mới chọn kênh. Kênh đầu (gọi điện) tô đặc vì là hành động chính.
+-->
+<nav class="contact-bar fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-line bg-paper md:hidden" aria-label="Liên hệ nhanh">
+  {
+    barChannels.map((channel, i) => (
+      <a
+        href={channel.href}
+        class:list={[
+          'flex h-14 items-center justify-center text-[0.6875rem] tracking-[0.16em] uppercase',
+          i === 0 ? 'bg-ink text-paper' : 'border-l border-line text-ink',
+        ]}
+        target={isExternal(channel.href) ? '_blank' : undefined}
+        rel={isExternal(channel.href) ? 'noopener noreferrer' : undefined}
+      >
+        {channel.label}
+      </a>
+    ))
+  }
+</nav>
+
+<div class="contact-fab fixed right-4 bottom-4 z-40 flex flex-col items-end max-md:hidden md:right-6 md:bottom-6">
   <div class="contact-panel flex flex-col items-end gap-2" id="contact-panel">
     {
       contactChannels.map((channel, i) => (
@@ -99,6 +126,11 @@ function isExternal(href: string) {
       opacity 0.3s var(--ease-out-expo),
       transform 0.3s var(--ease-out-expo),
       visibility 0.3s;
+  }
+
+  /* Chừa vùng an toàn của máy có thanh home (iPhone). */
+  .contact-bar {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .contact-panel > a {

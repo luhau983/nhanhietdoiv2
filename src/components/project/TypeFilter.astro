@@ -21,7 +21,12 @@ const withoutProjects = types.filter((t) => t.count === 0);
 ---
 
 <div
-  class:list={['type-filter flex items-center gap-x-8 overflow-x-auto px-5 md:px-10', className]}
+  class:list={[
+    'type-filter flex items-center gap-x-8 overflow-x-auto px-5 md:px-10',
+    // Điện thoại: dính ngay dưới header để đang cuộn giữa lưới vẫn đổi được loại hình.
+    'max-md:sticky max-md:top-[var(--header-h)] max-md:z-30 max-md:border-b max-md:border-line max-md:bg-paper/95 max-md:backdrop-blur-sm',
+    className,
+  ]}
   data-type-filter
   data-param={TYPE_PARAM}
 >
@@ -129,6 +134,14 @@ const withoutProjects = types.filter((t) => t.count === 0);
       });
 
       empty?.classList.toggle('hidden', visible > 0);
+
+      // Thanh đang dính mà lưới ngắn lại thì kéo đầu lưới về ngay dưới thanh, không để
+      // người xem đứng giữa khoảng trống của phần đã bị lọc mất.
+      if (updateUrl && wall && wall.getBoundingClientRect().top < 0) {
+        const y = window.scrollY + wall.getBoundingClientRect().top - bar!.offsetHeight - bar!.offsetTop;
+        if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true });
+        else window.scrollTo(0, y);
+      }
       // Lưới bỏ ô lớn 2×2 khi đang lọc — xem WorkWall.
       wall?.toggleAttribute('data-filtered', type !== 'all');
 

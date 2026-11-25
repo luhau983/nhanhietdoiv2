@@ -4,32 +4,37 @@ import { SERVICES } from '@/config/services';
 import { site } from '@/config/site';
 
 /*
-  Dải mở đầu trang chủ: một dòng định danh + bốn dịch vụ thành một hàng mảnh.
+  Dải mở đầu trang chủ: bốn dịch vụ thành MỘT hàng mảnh ở mọi khổ màn.
 
-  Cố ý KHÔNG có ảnh hero: trang chủ là nơi xem nhà, nên thứ chiếm màn hình đầu phải
-  là các ô công trình ngay bên dưới. Dịch vụ chỉ cần đọc được trong một lần liếc và
-  bấm được — chi tiết nằm ở /dich-vu.
+  Khách chủ yếu xem bằng điện thoại và chỉ lướt vài giây, nên màn đầu 375×812 phải
+  chứa đủ: làm dịch vụ gì (hàng này, 48px), làm loại nhà gì (thanh loại hình ngay
+  dưới), và nhà trông ra sao (ô công trình). Vì vậy trên điện thoại dùng nhãn ngắn
+  (`short`) và ẩn dòng định danh — logo ở header đã nói tên studio.
+
+  Cố ý KHÔNG có ảnh hero: thứ chiếm màn hình đầu phải là các ô công trình.
 */
 ---
 
 <section class="pt-[var(--header-h)]" aria-label="Giới thiệu">
-  <h1 class="label px-5 py-4 md:px-10 md:py-5">
+  <h1 class="label px-5 py-4 max-md:sr-only md:px-10 md:py-5">
     {site.legalName} <span class="text-muted/70">— {site.city}, từ {site.foundedYear}</span>
   </h1>
 
-  <nav aria-label="Dịch vụ" class="border-y border-line">
-    <ol class="grid grid-cols-2 gap-px bg-line lg:grid-cols-4">
+  <nav aria-label="Dịch vụ" class="border-b border-line md:border-t">
+    <ol class="grid grid-cols-4 gap-px bg-line">
       {
         SERVICES.map((service) => (
           <li class="bg-paper">
             <a
               href={servicePath(service.slug)}
-              class="group flex h-full items-baseline gap-2.5 px-5 py-3.5 transition-colors duration-300 hover:bg-paper-deep md:gap-3 md:px-10 md:py-5"
+              aria-label={service.label}
+              class="group flex h-full min-h-12 items-center justify-center gap-3 px-1 text-center transition-colors duration-300 hover:bg-paper-deep md:justify-start md:px-10 md:py-5 md:text-left"
             >
-              <span class="label tabular-nums">{service.num}</span>
-              <span class="text-sm leading-tight md:text-lead">{service.label}</span>
+              <span class="label tabular-nums max-md:hidden">{service.num}</span>
+              <span class="text-[0.8125rem] leading-tight md:hidden">{service.short}</span>
+              <span class="text-lead leading-tight max-md:hidden">{service.label}</span>
               <span
-                class="ml-auto text-muted transition-[transform,color] duration-500 ease-[var(--ease-hover)] group-hover:translate-x-1 group-hover:text-ink max-md:hidden"
+                class="ml-auto text-muted transition-[transform,color] duration-500 ease-[var(--ease-hover)] group-hover:translate-x-1 group-hover:text-ink max-lg:hidden"
                 aria-hidden="true"
               >
                 →
