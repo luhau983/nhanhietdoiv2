@@ -32,7 +32,7 @@ const withoutProjects = types.filter((t) => t.count === 0);
 >
   <p class="label shrink-0 max-md:hidden">Loại hình</p>
 
-  <ul class="flex items-center gap-x-6 whitespace-nowrap md:flex-wrap md:gap-x-7">
+  <ul class="flex items-center gap-2 whitespace-nowrap md:flex-wrap">
     <li>
       <button type="button" class="chip" data-filter="all" aria-pressed="true">
         Tất cả <sup>{total}</sup>
@@ -60,51 +60,64 @@ const withoutProjects = types.filter((t) => t.count === 0);
 <style>
   .type-filter {
     scrollbar-width: none;
+    padding-block: 0.5rem;
   }
 
   .type-filter::-webkit-scrollbar {
     display: none;
   }
 
-  /* 44px: ngưỡng vùng chạm tối thiểu. Trạng thái chọn là gạch chân, không phải hộp. */
+  /*
+    Viên bo tròn. Loại đang chọn tô đặc mực — khác hẳn về khối lượng thị giác so với các
+    viên viền mảnh bên cạnh, nên liếc qua là biết đang xem loại nào. Bản trước chỉ gạch
+    chân 1px: giữa một hàng chữ cùng cỡ thì gần như không thấy.
+
+    Cao 40px: sát ngưỡng vùng chạm, mà hàng vẫn mảnh khi dính dưới header trên điện thoại.
+  */
   .chip {
-    position: relative;
     display: inline-flex;
-    min-height: 2.75rem;
+    height: 2.5rem;
     align-items: center;
-    gap: 0.3em;
-    font-size: 0.875rem;
-    color: var(--color-muted);
-    transition: color 0.3s var(--ease-hover);
+    gap: 0.35em;
+    padding-inline: 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    color: var(--color-ink-soft);
+    transition:
+      background-color 0.35s var(--ease-hover),
+      border-color 0.35s var(--ease-hover),
+      color 0.35s var(--ease-hover);
   }
 
   button.chip {
     cursor: pointer;
   }
 
-  button.chip:hover,
-  .chip[aria-pressed='true'] {
+  button.chip:hover {
+    border-color: var(--color-ink);
     color: var(--color-ink);
   }
 
-  .chip[aria-pressed='true']::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0.5rem;
-    height: 1px;
-    background-color: currentColor;
+  .chip[aria-pressed='true'] {
+    border-color: var(--color-ink);
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+    font-weight: 400;
   }
 
   .chip sup {
-    top: -0.5em;
+    top: -0.35em;
     font-size: 0.625rem;
     font-variant-numeric: tabular-nums;
-    color: var(--color-muted);
+    opacity: 0.6;
   }
 
+  /* Loại chưa có dự án: không viền, không bấm được — chỉ để biết studio có nhận. */
   .chip-off {
-    color: color-mix(in oklab, var(--color-muted) 55%, transparent);
+    padding-inline: 0.5rem;
+    border-color: transparent;
+    color: color-mix(in oklab, var(--color-muted) 60%, transparent);
   }
 </style>
 
