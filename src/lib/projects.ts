@@ -31,3 +31,11 @@ export function coverAlt(project: Project): string {
   const { title, type, location } = project.data;
   return `${title} — ${typeLabel(type)}${location ? ` tại ${location}` : ''}`;
 }
+
+/**
+ * Tên view-transition của ảnh cover. Ô ở lưới và ảnh lớn ở trang chi tiết mang CÙNG
+ * tên này, nên khi điều hướng trình duyệt nội suy ô nhỏ thành ảnh lớn thay vì cắt cảnh.
+ */
+export function coverTransitionName(project: Project): string {
+  return `cover-${project.id}`;
+}

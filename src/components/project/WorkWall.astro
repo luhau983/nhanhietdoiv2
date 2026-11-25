@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import { projectPath } from '@/config/routes';
 import { typeLabel } from '@/config/taxonomy';
-import { coverAlt, type Project } from '@/lib/projects';
+import { coverAlt, coverTransitionName, type Project } from '@/lib/projects';
 
 interface Props {
   projects: Project[];
@@ -47,7 +47,11 @@ const FEATURE_WIDTHS = [480, 720, 960, 1280, 1600];
       return (
         <li data-project-type={project.data.type} data-feature={isFeature ? '' : undefined}>
           <a href={projectPath(project.id)} class="group flex h-full flex-col">
-            <div data-skeleton class="tile-frame aspect-[4/3] flex-1 overflow-hidden bg-paper-deep">
+            <div
+              data-skeleton
+              class="tile-frame aspect-[4/3] flex-1 overflow-hidden bg-paper-deep"
+              transition:name={coverTransitionName(project)}
+            >
               <Image
                 src={project.data.cover}
                 alt={coverAlt(project)}

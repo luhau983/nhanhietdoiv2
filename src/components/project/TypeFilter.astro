@@ -153,8 +153,26 @@ const withoutProjects = types.filter((t) => t.count === 0);
       window.history.replaceState(window.history.state, '', url);
     }
 
+    /*
+      Đổi bộ lọc bên trong một view transition: mỗi ô ảnh đã có view-transition-name
+      riêng (dùng cho hiệu ứng mở dự án), nên trình duyệt tự nội suy — ô còn lại TRƯỢT
+      về vị trí mới, ô bị lọc mờ đi — thay vì cả lưới nhảy cóc trong một khung hình.
+
+      Trình duyệt chưa hỗ trợ, hoặc người dùng tắt chuyển động: đổi thẳng như cũ.
+    */
+    function transition(type: string): void {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reduced || !('startViewTransition' in document)) {
+        apply(type, true);
+        return;
+      }
+
+      document.startViewTransition(() => apply(type, true));
+    }
+
     buttons.forEach((btn) => {
-      btn.addEventListener('click', () => apply(btn.dataset.filter ?? 'all', true));
+      btn.addEventListener('click', () => transition(btn.dataset.filter ?? 'all'));
     });
 
     // Tôn trọng ?loai= khi vào từ link ngoài (trang dịch vụ, footer).

@@ -480,6 +480,19 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     color: var(--color-paper);
   }
 
+  /* Mở ra bằng một nhịp mờ + phóng nhẹ thay vì bật tức thời. Animation (không phải
+     transition) vì <dialog> đi từ display:none, không có trạng thái trước để nội suy. */
+  .lightbox[open] {
+    animation: lightbox-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes lightbox-in {
+    from {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+  }
+
   .lightbox::backdrop {
     background-color: rgb(0 0 0 / 0.9);
   }

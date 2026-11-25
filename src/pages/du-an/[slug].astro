@@ -5,7 +5,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import BackLink from '@/components/layout/BackLink.astro';
 import Band from '@/components/section/Band.astro';
 import { ROUTES, projectPath, typePath } from '@/config/routes';
-import { coverAlt, getProjects, type Project } from '@/lib/projects';
+import { coverAlt, coverTransitionName, getProjects, type Project } from '@/lib/projects';
 import SpecTable from '@/components/project/SpecTable.astro';
 import Gallery from '@/components/project/Gallery.astro';
 import { site } from '@/config/site';
@@ -102,7 +102,11 @@ const ogImage = await getImage({
     </header>
 
     <!-- LCP của trang: AVIF trước, WebP sau, JPEG chốt hạ. -->
-    <figure data-skeleton class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]">
+    <figure
+      data-skeleton
+      class="relative aspect-[3/2] overflow-hidden bg-paper-deep md:aspect-[21/9]"
+      transition:name={coverTransitionName(project)}
+    >
       <div class="absolute inset-x-0 -top-[7%] h-[114%]">
         <Picture
           src={d.cover}

@@ -20,7 +20,7 @@ const { label, id, tone = 'paper' } = Astro.props;
     tone === 'deep' && 'bg-paper-deep',
   ]}
 >
-  <div class="grid gap-8 lg:grid-cols-12 lg:gap-10">
+  <div class="grid gap-8 lg:grid-cols-12 lg:gap-10" data-reveal>
     <div class="lg:col-span-3">
       <h2 class="label">{label}</h2>
       <slot name="aside" />
