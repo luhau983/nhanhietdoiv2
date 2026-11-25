@@ -17,7 +17,8 @@ const projects = defineCollection({
       // Chưa có thì bỏ trống — giao diện tự ẩn, không hiện chữ giữ chỗ.
       excerpt: z.string().min(20).max(220).optional(),
 
-      year: z.number().int().min(1990).max(2100),
+      // Chưa biết năm thật thì bỏ trống, đừng điền năm phỏng đoán.
+      year: z.number().int().min(1990).max(2100).optional(),
       location: z.string().min(1).optional(),
       type: z.enum(PROJECT_TYPE_SLUGS),
       status: z.enum(PROJECT_STATUSES).default('hoan-thanh'),

@@ -9,7 +9,7 @@ import { coverAlt, getProjects, type Project } from '@/lib/projects';
 import SpecTable from '@/components/project/SpecTable.astro';
 import Gallery from '@/components/project/Gallery.astro';
 import { site } from '@/config/site';
-import { typeLabel } from '@/config/taxonomy';
+import { statusLabel, typeLabel } from '@/config/taxonomy';
 
 export async function getStaticPaths() {
   const projects = await getProjects();
@@ -45,7 +45,8 @@ const hasText = Boolean(d.excerpt) || (project.body ?? '').trim().length > 0;
 const facts = [
   { label: 'Loại hình', value: typeLabel(d.type), href: typePath(d.type) },
   ...(d.location ? [{ label: 'Địa điểm', value: d.location, href: undefined }] : []),
-  { label: 'Năm', value: String(d.year), href: undefined },
+  ...(d.year ? [{ label: 'Năm', value: String(d.year), href: undefined }] : []),
+  { label: 'Trạng thái', value: statusLabel(d.status), href: undefined },
 ];
 
 // Ảnh chia sẻ phải là bản cắt 1200×630 riêng, không dùng thẳng d.cover.src:

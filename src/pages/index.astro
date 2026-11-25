@@ -18,8 +18,9 @@ import { countByType, getProjects } from '@/lib/projects';
 */
 const all = await getProjects();
 
-// Trần để trang chủ không phình vô hạn; 23 + ô chốt = 24, chia hết cho 2/3/4 cột.
-const WALL_LIMIT = 23;
+// Trần để trang chủ không phình vô hạn. Ô đầu chiếm 4 ô nên 3 + 21 = 24 ô, vừa khít
+// lưới 4 cột; không dùng ô chốt ở đây vì cuối trang đã có lời mời liên hệ.
+const WALL_LIMIT = 21;
 const wall = all.slice(0, WALL_LIMIT);
 const hasMore = all.length > wall.length;
 
@@ -32,12 +33,15 @@ const ctaProject = all.find((p) => p.data.featured) ?? all[0];
   <section id="du-an" aria-label="Dự án" class="pb-16 md:pb-24">
     <TypeFilter types={countByType(wall)} total={wall.length} class="md:py-3" />
     <div class="h-4 md:hidden"></div>
-    <WorkWall
-      projects={wall}
-      feature
-      moreHref={hasMore ? ROUTES.projects : ROUTES.contact}
-      moreLabel={hasMore ? `Tất cả ${all.length} dự án` : 'Bắt đầu dự án của bạn'}
-    />
+    <WorkWall projects={wall} feature />
+
+    {
+      hasMore && (
+        <a href={ROUTES.projects} class="link-underline mx-5 mt-10 inline-block text-sm md:mx-10">
+          Tất cả {all.length} dự án →
+        </a>
+      )
+    }
   </section>
 
   <Band label="Quy trình">

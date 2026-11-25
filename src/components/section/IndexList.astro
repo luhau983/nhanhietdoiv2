@@ -8,8 +8,6 @@ interface Item {
   title: string;
   /** Một câu diễn giải. */
   body?: string;
-  /** Hoặc vài cụm từ ngắn, mỗi cụm một dòng. */
-  points?: readonly string[];
   /** Neo riêng của dòng (/dich-vu#thiet-ke-noi-that). */
   id?: string;
 }
@@ -35,14 +33,6 @@ const { items } = Astro.props;
           <p class="col-start-2 max-w-[52ch] text-[0.9375rem] text-ink-soft md:col-start-3 md:pt-1.5">
             {item.body}
           </p>
-        )}
-
-        {item.points && (
-          <ul class="col-start-2 space-y-1 text-[0.9375rem] text-ink-soft md:col-start-3 md:pt-1.5">
-            {item.points.map((point) => (
-              <li>{point}</li>
-            ))}
-          </ul>
         )}
       </li>
     ))

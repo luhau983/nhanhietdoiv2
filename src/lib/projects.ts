@@ -12,7 +12,9 @@ export interface TypeCount {
 /** Dự án đã công bố, theo `order` rồi năm mới trước. Nơi duy nhất quyết định thứ tự. */
 export async function getProjects(): Promise<Project[]> {
   const entries = await getCollection('projects', ({ data }) => !data.draft);
-  return entries.sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+  return entries.sort(
+    (a, b) => a.data.order - b.data.order || (b.data.year ?? 0) - (a.data.year ?? 0),
+  );
 }
 
 /** Mọi loại hình kèm số dự án — giữ cả loại chưa có dự án (count = 0). */

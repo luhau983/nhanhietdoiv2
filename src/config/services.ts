@@ -1,8 +1,9 @@
 /**
  * Dịch vụ và quy trình — phần trả lời câu "studio nhận làm gì, làm thế nào".
  *
- * Bốn dịch vụ lấy theo trang /dich-vu/ của website cũ. `scope` là các hạng mục
- * công việc viết ngắn, CẦN STUDIO XÁC NHẬN trước khi lên production.
+ * Bốn dịch vụ lấy đúng theo menu Dịch vụ của website cũ. Chỉ có tên: site cũ không
+ * còn trang mô tả, nên không tự viết phạm vi công việc thay studio. Khi studio gửi
+ * mô tả thì thêm field `body` — IndexList đã hỗ trợ sẵn.
  * `short` là nhãn một-hai chữ cho hàng dịch vụ trên điện thoại (4 ô / 375px).
  */
 export const SERVICES = [
@@ -11,28 +12,24 @@ export const SERVICES = [
     num: '01',
     label: 'Thiết kế kiến trúc',
     short: 'Kiến trúc',
-    scope: ['Mặt bằng, hình khối', 'Phối cảnh 3D', 'Hồ sơ kỹ thuật thi công'],
   },
   {
     slug: 'thiet-ke-noi-that',
     num: '02',
     label: 'Thiết kế nội thất',
     short: 'Nội thất',
-    scope: ['Concept, moodboard', 'Phối cảnh 3D', 'Bản vẽ chi tiết nội thất'],
   },
   {
     slug: 'thiet-ke-landscape',
     num: '03',
     label: 'Thiết kế landscape',
     short: 'Landscape',
-    scope: ['Sân vườn, tiểu cảnh', 'Cây xanh, mặt nước', 'Chiếu sáng ngoài trời'],
   },
   {
     slug: 'thi-cong-xay-dung',
     num: '04',
     label: 'Thi công xây dựng',
     short: 'Thi công',
-    scope: ['Dự toán, tiến độ', 'Phần thô và hoàn thiện', 'Giám sát, nghiệm thu, bàn giao'],
   },
 ] as const;
 

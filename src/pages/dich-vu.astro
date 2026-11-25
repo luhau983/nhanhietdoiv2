@@ -17,7 +17,6 @@ const services = SERVICES.map((s) => ({
   id: s.slug,
   num: s.num,
   title: s.label,
-  points: s.scope,
 }));
 ---
 
@@ -28,7 +27,7 @@ const services = SERVICES.map((s) => ({
 >
   <PageHead label="Dịch vụ" title="Từ bản vẽ đầu tiên tới ngày bàn giao." />
 
-  <Band label="Phạm vi">
+  <Band label="Nhận làm">
     <IndexList items={services} />
   </Band>
 

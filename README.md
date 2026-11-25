@@ -80,11 +80,11 @@ Website cũ chỉ còn trang chủ hoạt động. Custom post type `du-an` khô
 
 - 263 ảnh (145 MB) từ media library → `assets-source/` (không commit, chạy `npm run fetch:old-images` để lấy lại)
 - Thông tin studio: tên, email, SĐT, Facebook, YouTube, 8 hạng mục (giữ slug cũ để redirect 1:1), 4 dịch vụ
-- 11 dự án dựng từ các nhóm ảnh suy ra theo mốc thời gian upload → `npm run import:old-projects`
+- 13 dự án: ban đầu import theo mốc thời gian upload (`npm run import:old-projects`), sau đó xếp lại bằng tay theo nội dung ảnh — một file dự án có thể trỏ ảnh ở thư mục `du-an-NN` khác. **Chạy lại script import sẽ ghi đè việc xếp lại này.**
 
 Chưa có, phải bổ sung trước khi lên production:
 
-1. **Tên dự án thật.** 11 dự án đang mang tên tạm `Dự án 01`…`Dự án 11`, `location: Chưa cập nhật`. Danh sách kèm ảnh gốc của từng nhóm: `assets-source/RENAME-TODO.md`.
+1. **Tên dự án thật.** 13 dự án đang mang tên MÔ TẢ đặt theo nội dung ảnh (vd. "Biệt thự góc phố"), không phải tên công trình thật; `year`, `location`, `excerpt` để trống nên giao diện tự ẩn. Loại hình và nhóm ảnh (3D / thực tế / bản vẽ) cũng gán theo ảnh — studio cần rà lại. Mô tả từng dịch vụ chưa có: thêm field `body` trong `src/config/services.ts`.
 
    Bốn tên đã biết, dùng để đối chiếu:
    - *Mr.Hai's Villa* — Trảng Bom, Đồng Nai (trang chủ site cũ)

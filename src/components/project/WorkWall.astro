@@ -127,20 +127,6 @@ const FEATURE_WIDTHS = [480, 720, 960, 1280, 1600];
     }
   }
 
-  /*
-    Có ô lớn thì lưới 4 cột dư đúng một ô ở hàng cuối (4 + 10 + 1 = 15). Ô chốt giãn
-    2 cột để lấp. Chỉ ở lg: lưới 3 cột thì 15 ô đã vừa khít 5 hàng.
-  */
-  @media (min-width: 1024px) {
-    .work-wall:not([data-filtered]):has(> li[data-feature]) > li[data-more] {
-      grid-column: span 2;
-    }
-
-    .work-wall:not([data-filtered]):has(> li[data-feature]) > li[data-more] > a > span:first-child {
-      aspect-ratio: auto;
-    }
-  }
-
   /* :global vì <Image> không nhận attribute scope. Nâng layer lúc hover để phép phóng
      không raster lại bitmap từng khung hình; `scale` vì Tailwind 4 tách khỏi transform. */
   @media (hover: hover) {
