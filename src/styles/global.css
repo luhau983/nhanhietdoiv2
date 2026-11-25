@@ -189,14 +189,49 @@
   }
 
   /*
-    Khung chờ ảnh là một mặt phẳng paper-deep ĐỨNG YÊN (nền của chính khung), ảnh mờ
-    vào khi tải xong.
+    Skeleton cho khung ảnh: một dải sáng lướt ngang trong lúc ảnh chưa về, tắt hẳn khi
+    ảnh tải xong (Motion.astro gắn data-loaded lên khung).
 
-    Bản trước có vệt sáng quét ngang bằng animation background-position. Thuộc tính đó
-    không chạy được trên compositor: mỗi khung hình trình duyệt phải vẽ lại từng ô đang
-    chờ, mà trang chủ có 13 ô cùng lúc — đúng lúc mạng chậm, máy đang bận giải mã ảnh,
-    thì lại bị bắt vẽ thêm 13 vùng mỗi khung hình.
+    Dải sáng là pseudo-element chạy bằng TRANSFORM — thuộc tính duy nhất ở đây trình
+    duyệt hoạt hoạ được trên compositor, không vẽ lại gì mỗi khung hình. Bản đầu tiên
+    dùng background-position nên 13 ô trang chủ bị vẽ lại liên tục và gây giật; đó là lý
+    do nó từng bị gỡ.
+
+    z-index: -1 bên trong isolation: isolate → dải sáng nằm TRÊN nền của khung nhưng
+    DƯỚI thẻ img, nên ảnh về tới đâu che tới đó, không cần xếp lớp với thứ gì khác.
+
+    :where() để position: relative có độ đặc hiệu 0 — khung nào đã khai absolute/fixed
+    bằng utility thì utility đó vẫn thắng.
   */
+  :where([data-skeleton]) {
+    position: relative;
+    isolation: isolate;
+  }
+
+  [data-skeleton]:not([data-loaded])::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      color-mix(in oklab, white 60%, var(--color-paper-deep)) 50%,
+      transparent 75%
+    );
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.4s var(--ease-hover) infinite;
+  }
+
+  /* Khung nền tối (lớp xem ảnh, ô chốt trang): dải sáng chỉ nhỉnh hơn nền mực một chút. */
+  [data-skeleton='dark']:not([data-loaded])::before {
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      color-mix(in oklab, var(--color-paper) 16%, var(--color-ink)) 50%,
+      transparent 75%
+    );
+  }
 }
 
 /*
@@ -273,6 +308,12 @@
   }
 }
 
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes img-fade-in {
   from {
     opacity: 0;
@@ -296,5 +337,10 @@
 
   [data-img-fade] {
     opacity: 1 !important;
+  }
+
+  /* Tắt hẳn dải sáng: nền phẳng là đủ để hiểu ô đang chờ ảnh. */
+  [data-skeleton]::before {
+    display: none !important;
   }
 }

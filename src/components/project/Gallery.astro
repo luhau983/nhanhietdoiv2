@@ -507,6 +507,9 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     touch-action: pan-y pinch-zoom;
   }
 
+  /* Chưa phóng to thì không có gì để cuộn; cắt phần tràn để dải sáng skeleton (trượt
+     bằng transform) không làm khung hiện thanh cuộn. Đặt sau rule .lightbox-stage. */
+
   .lightbox-stage {
     display: grid;
     place-items: safe center;
@@ -514,6 +517,10 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     height: 100%;
     overflow: auto;
     overscroll-behavior: contain;
+  }
+
+  .lightbox-stage:not([data-zoomed]) {
+    overflow: hidden;
   }
 
   .lightbox-stage img {
