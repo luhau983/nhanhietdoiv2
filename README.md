@@ -10,7 +10,7 @@ Thay thế website WordPress cũ tại [nhanhietdoi.vn](https://nhanhietdoi.vn).
 | CSS | Tailwind 4 (`@tailwindcss/vite`) | Token khai báo trong `src/styles/global.css` qua `@theme` |
 | Nội dung | Content Collections + MDX + zod | Thêm dự án = thêm 1 file `.mdx`; sai schema thì build fail, không ra site lỗi |
 | Ảnh | `astro:assets` + sharp | Tối ưu lúc build, xuất WebP + `srcset`; không cần server xử lý ảnh |
-| Motion | Lenis + CSS scroll-driven animation | Parallax thuần CSS (`[data-parallax]` trong global.css), không GSAP |
+| Motion | Cuộn native + CSS scroll-driven animation + View Transitions | Parallax thuần CSS (`[data-parallax]` trong global.css), không GSAP |
 | Font | Open Sans variable (self-host) | Có đủ dấu tiếng Việt — nhiều font display thì không |
 
 ## Lệnh

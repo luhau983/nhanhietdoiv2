@@ -1,58 +1,27 @@
 ---
 /**
- * Nơi duy nhất khởi tạo motion bằng JS: smooth scroll, reveal, trạng thái tải ảnh.
+ * Motion bằng JS của toàn site — chỉ còn hai việc nhẹ: reveal khi cuộn tới và đánh dấu
+ * ảnh đã tải. Cả hai dùng IntersectionObserver / sự kiện load, không có vòng lặp theo
+ * khung hình nào.
  *
- * Parallax KHÔNG nằm ở đây: nó là CSS scroll-driven animation trong global.css
- * ([data-parallax]), không tốn byte JS nào.
+ * Cuộn trang là cuộn NATIVE của trình duyệt. Bản trước dùng Lenis (cuộn mượt bằng JS):
+ * mỗi khung hình chạy một lượt JS trên main thread để tự đặt vị trí cuộn, nên máy yếu
+ * hay trang nhiều ảnh là thấy trễ và giật — đúng thứ người dùng báo là "lag". Cuộn
+ * native chạy trên compositor, không tốn JS.
  *
- * 1. prefers-reduced-motion tắt sạch Lenis, không chỉ rút ngắn thời lượng.
- * 2. Mọi thứ re-init theo astro:page-load để hoạt động với View Transitions.
+ * Parallax là CSS scroll-driven animation trong global.css, cũng không qua JS.
+ * Mọi thứ re-init theo astro:page-load để hoạt động với View Transitions.
  */
 ---
 
 <script>
-  import Lenis from 'lenis';
-
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  let lenis: Lenis | null = null;
   let cleanups: Array<() => void> = [];
 
   function teardown() {
     cleanups.forEach((fn) => fn());
     cleanups = [];
-    lenis?.destroy();
-    lenis = null;
-  }
-
-  function initSmoothScroll() {
-    if (reduced.matches) return;
-
-    lenis = new Lenis({
-      duration: 1.1,
-      // Đường cong giảm dần: nhanh lúc đầu, dừng mềm. Cảm giác "nặng" đúng chất
-      // site kiến trúc, không trôi tuột như ease-linear.
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1.6,
-      // Mobile dùng scroll native: Lenis trên touch thường phản tác dụng.
-      smoothWheel: true,
-      syncTouch: false,
-    });
-
-    let frame = requestAnimationFrame(function raf(time) {
-      lenis?.raf(time);
-      frame = requestAnimationFrame(raf);
-    });
-
-    // Công khai instance để nút "về đầu trang" cuộn qua Lenis. Nếu nó tự gọi
-    // window.scrollTo thì vị trí nội bộ của Lenis lệch khỏi vị trí thật.
-    window.__lenis = lenis;
-
-    cleanups.push(() => {
-      cancelAnimationFrame(frame);
-      delete window.__lenis;
-    });
   }
 
   function initReveal() {
@@ -113,45 +82,10 @@
     });
   }
 
-  /*
-    Tắt vệt sáng skeleton của những khung đã trôi xa khỏi màn hình — xem chú thích
-    [data-skeleton] trong global.css để biết vì sao đánh dấu theo chiều "tắt".
-
-    rootMargin 300px: tắt hẳn khi đã ra xa, chứ không tắt ngay ở mép màn hình. Khung vừa
-    trôi khỏi tầm mắt một chút mà đã dừng thì lúc cuộn ngược lại nó bật lên giữa chu kỳ,
-    thành một cú giật sáng.
-
-    Khung nằm trong <dialog> thì không theo dõi: lúc hộp thoại đóng nó là display:none nên
-    animation đã tự huỷ, mà đánh dấu thì nó bị coi là ngoài màn hình rồi tới lúc mở chưa
-    chắc kịp bỏ dấu — lớp xem ảnh sẽ mất skeleton đúng chỗ cần nhất.
-  */
-  function initSkeletonSweep() {
-    const frames = [...document.querySelectorAll<HTMLElement>('[data-skeleton]')].filter(
-      (el) => !el.closest('dialog'),
-    );
-    if (!frames.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const el = entry.target as HTMLElement;
-          if (entry.isIntersecting) delete el.dataset.offscreen;
-          else el.dataset.offscreen = '';
-        });
-      },
-      { rootMargin: '300px 0px' },
-    );
-
-    frames.forEach((el) => observer.observe(el));
-    cleanups.push(() => observer.disconnect());
-  }
-
   function boot() {
     teardown();
-    initSmoothScroll();
     initReveal();
     initImageLoading();
-    initSkeletonSweep();
   }
 
   // astro:page-load chạy cả lần tải đầu và sau mỗi lần điều hướng View Transitions.

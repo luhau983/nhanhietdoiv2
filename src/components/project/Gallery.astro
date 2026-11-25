@@ -887,19 +887,13 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
     show(index);
     dialog.showModal();
     isOpen = true;
-
-    // Lenis giữ quyền điều khiển cuộn của trang; không dừng thì bánh xe chuột vẫn
-    // cuộn trang nền phía sau lớp phủ thay vì cuộn ảnh đang phóng to.
-    window.__lenis?.stop();
   }
 
   /*
     Mọi đường thoát đều đi qua đây, kể cả Esc.
 
-    KHÔNG dựa vào sự kiện `close` của <dialog> để trả Lenis lại: đo trong dev thấy
-    sự kiện này không phải lúc nào cũng bắn, và nếu nó lỡ một nhịp thì Lenis kẹt ở
-    trạng thái stop — người xem đóng lớp ảnh xong không cuộn trang được nữa, hỏng
-    nặng hơn nhiều so với việc tự gọi start() ở đây.
+    Trang nền bị khoá cuộn bằng CSS (body:has(dialog[open]) trong global.css), tự mở
+    lại khi hộp thoại đóng — không có trạng thái JS nào để kẹt.
   */
   function close() {
     const dialog = document.querySelector<HTMLDialogElement>('[data-lightbox]');
@@ -907,7 +901,6 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
 
     isOpen = false;
     stage()?.removeAttribute('data-zoomed');
-    window.__lenis?.start();
   }
 
   function toggleZoom() {
@@ -1109,7 +1102,7 @@ const activeSlug = (groups.find((g) => g.items.length > 0) ?? groups[0]).slug;
   });
 
   // Điều hướng bằng View Transitions khi lớp ảnh đang mở: hộp thoại bị thay mất
-  // nhưng Lenis thì vẫn đang stop, phải trả lại.
+  // nên phải dọn trạng thái isOpen.
   document.addEventListener('astro:before-swap', () => {
     if (isOpen) close();
   });

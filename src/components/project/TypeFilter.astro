@@ -24,7 +24,7 @@ const withoutProjects = types.filter((t) => t.count === 0);
   class:list={[
     'type-filter flex items-center gap-x-8 overflow-x-auto px-5 md:px-10',
     // Điện thoại: dính ngay dưới header để đang cuộn giữa lưới vẫn đổi được loại hình.
-    'max-md:sticky max-md:top-[var(--header-h)] max-md:z-30 max-md:border-b max-md:border-line max-md:bg-paper/95 max-md:backdrop-blur-sm',
+    'max-md:sticky max-md:top-[var(--header-h)] max-md:z-30 max-md:border-b max-md:border-line max-md:bg-paper',
     className,
   ]}
   data-type-filter
@@ -229,8 +229,7 @@ const withoutProjects = types.filter((t) => t.count === 0);
       // người xem đứng giữa khoảng trống của phần đã bị lọc mất.
       if (updateUrl && wall && wall.getBoundingClientRect().top < 0) {
         const y = window.scrollY + wall.getBoundingClientRect().top - bar!.offsetHeight - bar!.offsetTop;
-        if (window.__lenis) window.__lenis.scrollTo(y, { immediate: true });
-        else window.scrollTo(0, y);
+        window.scrollTo(0, y);
       }
       // Lưới bỏ ô lớn 2×2 khi đang lọc — xem WorkWall.
       wall?.toggleAttribute('data-filtered', type !== 'all');

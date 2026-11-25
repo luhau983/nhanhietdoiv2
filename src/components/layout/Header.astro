@@ -20,9 +20,10 @@ function isActive(href: string) {
   thì chữ cam chìm. Đổ trắng toàn bộ logo thì giải quyết được tương phản nhưng mất
   màu nhận diện, mà màu là thứ không được phép mất.
 
-  Nền mờ đặt trên .nav-bar chứ KHÔNG trên <header>: backdrop-filter biến phần tử thành
-  containing block của con `position: fixed`, nên đặt ở header thì lớp phủ menu mobile
-  (fixed inset-0) co lại đúng bằng chiều cao header thay vì phủ kín màn hình.
+  Nền ĐẶC, không backdrop-blur: lớp mờ nền phải lấy mẫu lại toàn bộ vùng ảnh phía sau ở
+  mỗi khung hình cuộn — trên điện thoại tầm trung đó là nguồn giật rõ nhất của một thanh
+  cố định nằm trên lưới ảnh. (Và backdrop-filter còn biến phần tử thành containing block
+  của con `position: fixed`, từng làm lớp phủ menu mobile co lại bằng chiều cao header.)
 
   Nền cố định còn xoá luôn hai thứ rắc rối: lớp scrim, và việc chữ hero trượt lên
   chui vào sau header trong suốt.
@@ -58,7 +59,7 @@ function isActive(href: string) {
     </nav>
   </div>
 
-  <div class="nav-bar relative flex items-center justify-between border-b border-line bg-paper/90 px-5 py-2.5 backdrop-blur-sm md:px-10 md:py-5">
+  <div class="nav-bar relative flex items-center justify-between border-b border-line bg-paper px-5 py-2.5 md:px-10 md:py-5">
     <!--
       Logo lấy từ nhận diện cũ của studio: hoa thiên điểu, chữ cam, dòng phụ đen.
       Luôn giữ nguyên màu — không đổ trắng, không lọc màu ở bất kỳ trạng thái nào.

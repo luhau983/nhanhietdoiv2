@@ -5,7 +5,7 @@
 
 <!--
   Mốc đo cao 80vh neo ở đầu tài liệu. Còn thấy mốc này nghĩa là vẫn ở gần đầu
-  trang → ẩn nút. Đo bằng IntersectionObserver thay vì scroll event vì Lenis
+  trang → ẩn nút. Đo bằng IntersectionObserver thay vì scroll event vì nó
   không phát scroll event trên window, nên listener scroll sẽ không bao giờ chạy.
 -->
 <div class="back-to-top-sentinel" aria-hidden="true"></div>
@@ -96,10 +96,7 @@
     const target = event.target;
     if (!(target instanceof Element) || !target.closest('.back-to-top')) return;
 
-    // Lenis điều khiển scroll nên phải nhờ nó cuộn; gọi window.scrollTo trực tiếp
-    // làm vị trí nội bộ của Lenis lệch và cú cuộn sau bị giật về chỗ cũ.
-    if (window.__lenis) window.__lenis.scrollTo(0);
-    else window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   document.addEventListener('astro:page-load', observeSentinel);

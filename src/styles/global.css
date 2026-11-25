@@ -68,7 +68,6 @@
   }
 
   html {
-    /* Lenis điều khiển scroll; tắt smooth native để hai cơ chế không đánh nhau. */
     scroll-behavior: auto;
     -webkit-text-size-adjust: 100%;
   }
@@ -83,6 +82,11 @@
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Mở ảnh phóng to (<dialog>) thì khoá cuộn trang nền; tự mở lại khi đóng. */
+  body:has(dialog[open]) {
+    overflow: hidden;
   }
 
   ::selection {
@@ -185,72 +189,14 @@
   }
 
   /*
-    Skeleton cho khung ảnh: vệt sáng chạy ngang trên nền khung, tắt hẳn khi ảnh bên
-    trong đã load (Motion.astro gắn data-loaded).
+    Khung chờ ảnh là một mặt phẳng paper-deep ĐỨNG YÊN (nền của chính khung), ảnh mờ
+    vào khi tải xong.
 
-    Vẽ bằng background của CHÍNH khung, không thêm pseudo-element phủ lên: khung ảnh
-    nào cũng đã có nền paper-deep và overflow-hidden, mà background luôn paint dưới
-    ảnh lẫn dưới các lớp phủ — nên không phải xếp z-index với overlay tên dự án của
-    WorkWall hay khối tiêu đề của hero, và vệt sáng không bao giờ quét lên chữ.
-
-    Vị trí nghỉ đặt ở 200% (vệt nằm ngoài khung, phía trái) chứ không phải 0: khi
-    animation bị tắt — reduced-motion, hoặc lúc gắn data-loaded — background trả về
-    đúng giá trị này, nên không có vệt sáng nào đứng chết giữa khung.
+    Bản trước có vệt sáng quét ngang bằng animation background-position. Thuộc tính đó
+    không chạy được trên compositor: mỗi khung hình trình duyệt phải vẽ lại từng ô đang
+    chờ, mà trang chủ có 13 ô cùng lúc — đúng lúc mạng chậm, máy đang bận giải mã ảnh,
+    thì lại bị bắt vẽ thêm 13 vùng mỗi khung hình.
   */
-  [data-skeleton] {
-    background-image: linear-gradient(
-      100deg,
-      transparent 30%,
-      color-mix(in oklab, white 70%, var(--color-paper)) 48%,
-      transparent 66%
-    );
-    background-repeat: no-repeat;
-    background-size: 200% 100%;
-    background-position: 200% 0;
-  }
-
-  /*
-    Quét khi ảnh chưa về, TRỪ khi khung đã trôi xa khỏi màn hình.
-
-    Đo được ở trang chủ: để animation trên mọi [data-skeleton] thì 5 ô lazy dưới màn hình
-    quét mãi không dừng — ảnh của chúng còn chưa được yêu cầu tải nên vệt sáng vừa sai
-    (không có gì đang tải) vừa tốn: background-position chạy trên main thread, mỗi frame
-    một lần tính lại style cho tới khi người xem chịu cuộn xuống.
-
-    Điều kiện viết theo chiều "trừ ra" chứ không phải "chỉ khi thấy": cả hai chiều đều cần
-    IntersectionObserver của Motion.astro, nhưng chọn chiều này thì khi observer không
-    chạy (tab nền, JS lỗi) skeleton vẫn hiện — mất phần tiết kiệm, không mất tính năng.
-    Chiều kia hỏng là skeleton biến mất hẳn.
-
-    Panel tab bị ẩn hay lớp xem ảnh lúc đóng đều là display:none, trình duyệt tự huỷ
-    animation nên không cần đánh dấu gì thêm.
-  */
-  [data-skeleton]:not([data-loaded]):not([data-offscreen]) {
-    animation: skeleton-sweep 1.5s var(--ease-hover) infinite;
-  }
-
-  /*
-    Bản nền tối cho khung ảnh có chữ trắng phủ lên (hero trang chủ, hero trang dự án,
-    lớp xem ảnh). Nền paper-deep ở những khung này làm chữ trắng gần như biến mất
-    trong lúc chờ ảnh, vì lớp gradient tối phủ sẵn không đủ dìm một nền sáng.
-  */
-  [data-skeleton='dark'] {
-    background-image: linear-gradient(
-      100deg,
-      transparent 30%,
-      color-mix(in oklab, var(--color-paper) 14%, var(--color-ink)) 48%,
-      transparent 66%
-    );
-  }
-
-  /*
-    Tắt bằng background-image: none thay vì hạ opacity: ảnh phía trên đang fade vào
-    (0.9s) nên nó che dần phần nền, còn vệt sáng thì biên độ sáng rất nhỏ — paper
-    pha trắng trên paper-deep — nên mất đi cũng không thành cú nháy.
-  */
-  [data-skeleton][data-loaded] {
-    background-image: none;
-  }
 }
 
 /*
@@ -333,16 +279,6 @@
   }
 }
 
-@keyframes skeleton-sweep {
-  from {
-    background-position: 200% 0;
-  }
-
-  to {
-    background-position: -100% 0;
-  }
-}
-
 /* Tôn trọng người tắt animation ở cấp hệ điều hành — bắt buộc, không phải tuỳ chọn. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -360,11 +296,5 @@
 
   [data-img-fade] {
     opacity: 1 !important;
-  }
-
-  /* Tắt cả vệt sáng, không chỉ rút ngắn: nền phẳng paper-deep là đủ để hiểu ô đang
-     chờ ảnh. */
-  [data-skeleton] {
-    background-image: none !important;
   }
 }
