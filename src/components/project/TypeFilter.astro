@@ -118,9 +118,10 @@ const withoutProjects = types.filter((t) => t.count === 0);
     Chỉ nhận việc khi JS đã đo xong ([data-pill]); trước đó viên đang chọn tự tô nền như
     cũ, nên không JS thì vẫn thấy rõ đang ở loại nào.
 
-    view-transition-name: lúc đổi bộ lọc trang đang nằm trong một view transition, không
-    có tên riêng thì cục nền chỉ hoà mờ theo nền trang chứ không trượt. Khi đó tắt
-    transition CSS ([data-vt]) để hai cơ chế không cùng đẩy một phần tử.
+    KHÔNG đặt view-transition-name cho riêng cục nền: phần tử có tên được vẽ thành một
+    lớp riêng nằm TRÊN ảnh chụp nền trang, mà chữ của viên lại thuộc nền trang — cục nền
+    đè mất chữ suốt lúc chuyển. Thay vào đó cả thanh lọc được đặt tên trong lúc lọc (xem
+    script) và hiện bản sống, nên cục nền trượt bằng transition CSS, chữ luôn nằm trên.
   */
   .chips {
     position: relative;
@@ -141,14 +142,13 @@ const withoutProjects = types.filter((t) => t.count === 0);
     background-color: var(--pill-fill);
     opacity: 0;
     pointer-events: none;
-    view-transition-name: type-pill;
   }
 
   [data-pill] .pill {
     opacity: 1;
   }
 
-  [data-pill='ready']:not([data-vt]) .pill {
+  [data-pill='ready'] .pill {
     transition:
       transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
       width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -258,9 +258,13 @@ const withoutProjects = types.filter((t) => t.count === 0);
         return;
       }
 
-      barEl.dataset.vt = '';
+      // Đặt tên cho thanh lọc CHỈ trong lúc lọc: global.css cho nhóm `type-filter` hiện
+      // bản sống (không ảnh chụp), nhờ vậy cục nền trượt thật trong khi lưới chuyển cảnh.
+      barEl.style.viewTransitionName = 'type-filter';
       const vt = document.startViewTransition(() => apply(type, true));
-      void vt.finished.finally(() => delete barEl.dataset.vt);
+      void vt.finished.finally(() => {
+        barEl.style.viewTransitionName = '';
+      });
     }
 
     buttons.forEach((btn) => {

@@ -277,6 +277,18 @@
   animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
 }
 
+/*
+  Thanh lọc loại hình trong lúc lọc: bỏ ảnh chụp cũ, hiện bản mới đang sống. Cục nền của
+  tab đang chọn trượt bằng transition CSS của chính nó, chữ không bị lớp nào đè lên.
+*/
+::view-transition-old(type-filter) {
+  display: none;
+}
+
+::view-transition-new(type-filter) {
+  animation: none;
+}
+
 /* Nền trang chỉ hoà mờ nhẹ — phần chuyển động để dành cho ảnh. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
