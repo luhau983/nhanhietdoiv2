@@ -74,12 +74,17 @@ function isActive(href: string) {
       />
     </a>
 
-    <nav class="hidden items-center gap-9 md:flex" aria-label="Menu chính">
+    <!--
+      Menu dạng viên, cùng ngôn ngữ với thanh loại hình: trang đang xem có nền xám ấm +
+      viền mực, mục cuối (Liên hệ) là nút viền mực vì đó là hành động chính của site.
+      Bản trước là bốn chữ 14px trơn — đứng cạnh logo màu thì gần như không thấy.
+    -->
+    <nav class="hidden items-center gap-1.5 md:flex" aria-label="Menu chính">
       {
-        site.nav.map((item) => (
+        site.nav.map((item, i) => (
           <a
             href={item.href}
-            class="link-underline text-sm tracking-wide"
+            class:list={['nav-link', i === site.nav.length - 1 && 'nav-cta']}
             aria-current={isActive(item.href) ? 'page' : undefined}
           >
             {item.label}
@@ -115,6 +120,42 @@ function isActive(href: string) {
 </header>
 
 <style>
+  .nav-link {
+    display: inline-flex;
+    height: 2.5rem;
+    align-items: center;
+    padding-inline: 1.125rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    transition:
+      background-color 0.3s var(--ease-hover),
+      border-color 0.3s var(--ease-hover),
+      color 0.3s var(--ease-hover);
+  }
+
+  .nav-link:hover {
+    background-color: var(--color-paper-deep);
+  }
+
+  .nav-link[aria-current='page'] {
+    border-color: var(--color-ink);
+    background-color: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
+  }
+
+  .nav-cta {
+    margin-left: 0.5rem;
+    border-color: var(--color-ink);
+  }
+
+  .nav-cta:hover,
+  .nav-cta[aria-current='page'] {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
   /* Khoá scroll khi menu mở. :has() tránh phải viết JS toggle class lên body. */
   :global(body:has(#nav-toggle:checked)) {
     overflow: hidden;
